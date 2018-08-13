@@ -1,0 +1,38 @@
+language: python
+
+os:
+  - linux
+
+python:
+  - 2.6
+  - 2.7
+  - 3.4
+  - 3.5
+  - 3.6
+  - pypy2.7-5.10.0
+  - pypy3.5
+
+addons:
+  apt:
+    packages:
+      - python-setuptools
+
+script:
+  python setup.py test
+
+install:
+  - pip install --upgrade setuptools_scm
+
+notifications:
+  slack: scikit-hep:b6cgBXwccPoaCNLn5VKFJFVy
+
+deploy:
+  provider: pypi
+  user: pivarski
+  password:
+    secure: ""
+  distributions: "sdist bdist_wheel --universal"
+  on:
+    tags: true
+    branch: master
+    condition: "$TRAVIS_PYTHON_VERSION = 2.7"
