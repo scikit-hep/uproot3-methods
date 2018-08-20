@@ -31,12 +31,26 @@
 import numpy
 
 import uproot_methods.base
+import uproot_methods.classes.TVector3
 
 class ArrayMethods(uproot_methods.base.ROOTMethods):
+    @property
+    def x(self):
+        return self["fX"]
+
+class Methods(ArrayMethods):
+    _arraymethods = ArrayMethods
+
     @classmethod
-    def fromroot(self, data):
-        self.fP = TVector3Methods(data["fX"], data["fY"], data["fZ"])
-        self.fE = data["fE"]
+    def _ttree(cls, data):
+        out = cls.__new__(cls)
+        out.fP = uproot_methods.classes.TVector3.Methods._ttree(data)
+        out.fE = data["fE"]
+        return out
+
+    def __init__(self, x=0.0, y=0.0, z=0.0, t=0.0):
+        self.fP = uproot_methods.classes.TVector3.Methods(x, y, z)
+        self.fE = t
 
     @classmethod
     def from4vector(cls, other):
@@ -407,13 +421,9 @@ class ArrayMethods(uproot_methods.base.ROOTMethods):
     def islightlike(self):
         return self.mag2 == 0
 
-class Methods(ArrayMethods):
-    def __init__(self, x=0.0, y=0.0, z=0.0, t=0.0):
-        self.fP = TVector3Methods(x, y, z)
-        self.fE = t
-
     def __repr__(self):
-        return "{0}({1:.4g}, {2:.4g}, {3:.4g}, {4:.4g})".format(self.__class__.__name__, self.fP.fX, self.fP.fY, self.fP.fZ, self.fE)
+        return "TLorentzVector({0:.4g}, {1:.4g}, {2:.4g}, {3:.4g})".format(self.fP.fX, self.fP.fY, self.fP.fZ, self.fE)
 
     def __str__(self):
-        return str((self.fP.fX, self.fP.fY, self.fP.fZ, self.fE))
+        return repr(self)
+    #     return str((self.fP.fX, self.fP.fY, self.fP.fZ, self.fE))
