@@ -32,10 +32,11 @@ import numpy
 
 import uproot_methods.base
 
-class Methods(uproot_methods.base.ROOTMethods):
-    def __init__(self, x=0.0, y=0.0, z=0.0, t=0.0):
-        self.fP = TVector3Methods(x, y, z)
-        self.fE = t
+class ArrayMethods(uproot_methods.base.ROOTMethods):
+    @classmethod
+    def fromroot(self, data):
+        self.fP = TVector3Methods(data["fX"], data["fY"], data["fZ"])
+        self.fE = data["fE"]
 
     @classmethod
     def from4vector(cls, other):
@@ -405,6 +406,11 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     def islightlike(self):
         return self.mag2 == 0
+
+class Methods(ArrayMethods):
+    def __init__(self, x=0.0, y=0.0, z=0.0, t=0.0):
+        self.fP = TVector3Methods(x, y, z)
+        self.fE = t
 
     def __repr__(self):
         return "{0}({1:.4g}, {2:.4g}, {3:.4g}, {4:.4g})".format(self.__class__.__name__, self.fP.fX, self.fP.fY, self.fP.fZ, self.fE)
