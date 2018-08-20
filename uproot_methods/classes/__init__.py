@@ -28,11 +28,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-def hasmethods(name):
+def hasmethods(name, array=False):
     if name not in globals() and name in hasmethods.loaders:
         globals()[name] = hasmethods.loaders[name].load_module(name)
-
-    return name in globals() and isinstance(getattr(globals()[name], "Methods", None), type)
+    return name in globals() and isinstance(getattr(globals()[name], "ArrayMethods" if array else "Methods", None), type)
 
 import pkgutil
 
