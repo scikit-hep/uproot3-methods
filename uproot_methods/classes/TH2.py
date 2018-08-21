@@ -41,11 +41,11 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def xnumbins(self):
-        return self.fXaxis.fNbins
+        return self._fXaxis._fNbins
 
     @property
     def ynumbins(self):
-        return self.fYaxis.fNbins
+        return self._fYaxis._fNbins
 
     @property
     def low(self):
@@ -57,19 +57,19 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def xlow(self):
-        return self.fXaxis.fXmin
+        return self._fXaxis._fXmin
 
     @property
     def xhigh(self):
-        return self.fXaxis.fXmax
+        return self._fXaxis._fXmax
 
     @property
     def ylow(self):
-        return self.fYaxis.fXmin
+        return self._fYaxis._fXmin
 
     @property
     def yhigh(self):
-        return self.fYaxis.fXmax
+        return self._fYaxis._fXmax
 
     @property
     def underflows(self):
@@ -117,7 +117,7 @@ class Methods(uproot_methods.base.ROOTMethods):
     def numpy(self):
         xlow  = self.xlow
         xhigh = self.xhigh
-        xbins = self.fXaxis.fXbins
+        xbins = self._fXaxis._fXbins
         if not xbins:
             norm   = float(xhigh - xlow) / self.xnumbins
             xedges = numpy.array([i*norm + xlow for i in range(self.xnumbins + 1)])
@@ -126,7 +126,7 @@ class Methods(uproot_methods.base.ROOTMethods):
 
         ylow  = self.ylow
         yhigh = self.yhigh
-        ybins = self.fYaxis.fXbins
+        ybins = self._fYaxis._fXbins
         if not ybins:
             norm   = (yhigh - ylow) / self.ynumbins
             yedges = numpy.array([i*norm + ylow for i in range(self.ynumbins + 1)])
@@ -142,12 +142,12 @@ class Methods(uproot_methods.base.ROOTMethods):
             low   = self.xlow
             high  = self.xhigh
             nbins = self.xnumbins
-            bins  = self.fXaxis.fXbins
+            bins  = self._fXaxis._fXbins
         elif axis == "y":
             low   = self.ylow
             high  = self.yhigh
             nbins = self.ynumbins
-            bins  = self.fYaxis.fXbins
+            bins  = self._fYaxis._fXbins
         else:
             raise ValueError("axis must be 'x' or 'y'")
 
@@ -220,10 +220,10 @@ class Methods(uproot_methods.base.ROOTMethods):
         self.fillallw(datax, datay, weights=None)
 
     def fillallw(self, datax, datay, weights):
-        xbins    = self.fXaxis.fXbins
+        xbins    = self._fXaxis._fXbins
         xlow     = self.xlow
         xhigh    = self.xhigh
-        ybins    = self.fYaxis.fXbins
+        ybins    = self._fYaxis._fXbins
         ylow     = self.ylow
         yhigh    = self.yhigh
 
@@ -297,10 +297,10 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def ylabels(self):
-        if self.fYaxis.fLabels is None:
+        if self._fYaxis._fLabels is None:
             return None
         else:
-            return [str(x) for x in self.fYaxis.fLabels]
+            return [str(x) for x in self._fYaxis._fLabels]
 
     def show(self, width=80, minimum=None, maximum=None, stream=sys.stdout):
         if minimum is None:

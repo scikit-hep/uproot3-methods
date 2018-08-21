@@ -36,30 +36,30 @@ import uproot_methods.base
 
 class Methods(uproot_methods.base.ROOTMethods):
     def __repr__(self):
-        if self.fName is None:
+        if self._fName is None:
             return "<{0} at 0x{1:012x}>".format(self._classname, id(self))
         else:
-            return "<{0} {1} 0x{2:012x}>".format(self._classname, repr(self.fName), id(self))
+            return "<{0} {1} 0x{2:012x}>".format(self._classname, repr(self._fName), id(self))
 
     @property
     def name(self):
-        return self.fName
+        return self._fName
 
     @property
     def title(self):
-        return self.fTitle
+        return self._fTitle
 
     @property
     def numbins(self):
-        return self.fXaxis.fNbins
+        return self._fXaxis._fNbins
 
     @property
     def low(self):
-        return self.fXaxis.fXmin
+        return self._fXaxis._fXmin
 
     @property
     def high(self):
-        return self.fXaxis.fXmax
+        return self._fXaxis._fXmax
 
     @property
     def underflows(self):
@@ -79,9 +79,9 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def numpy(self):
-        low = self.fXaxis.fXmin
-        high = self.fXaxis.fXmax
-        norm = (high - low) / self.fXaxis.fNbins
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
+        norm = (high - low) / self._fXaxis._fNbins
         freq = numpy.array(self.values, dtype=self._dtype.newbyteorder("="))
         edges = numpy.array([i*norm + low for i in range(self.numbins + 1)])
         return freq, edges
@@ -90,30 +90,30 @@ class Methods(uproot_methods.base.ROOTMethods):
         if index < 0:
             index += len(self)
 
-        low = self.fXaxis.fXmin
-        high = self.fXaxis.fXmax
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
         if index == 0:
             return (float("-inf"), low)
         elif index == len(self) - 1:
             return (high, float("inf"))
         else:
-            norm = (high - low) / self.fXaxis.fNbins
+            norm = (high - low) / self._fXaxis._fNbins
             return (index - 1)*norm + low, index*norm + low
 
     def index(self, data):
-        low = self.fXaxis.fXmin
-        high = self.fXaxis.fXmax
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
         if data < low:
             return 0
         elif data >= high:
             return len(self) - 1
         elif not math.isnan(data):
-            return int(math.floor(self.fXaxis.fNbins * (data - low) / (high - low))) + 1
+            return int(math.floor(self._fXaxis._fNbins * (data - low) / (high - low))) + 1
 
     def fill(self, datum):
-        numbins = self.fXaxis.fNbins
-        low = self.fXaxis.fXmin
-        high = self.fXaxis.fXmax
+        numbins = self._fXaxis._fNbins
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
         if datum < low:
             self[0] += 1
         elif datum >= high:
@@ -122,9 +122,9 @@ class Methods(uproot_methods.base.ROOTMethods):
             self[int(math.floor(numbins * (datum - low) / (high - low))) + 1] += 1
 
     def fillw(self, datum, weight):
-        numbins = self.fXaxis.fNbins
-        low = self.fXaxis.fXmin
-        high = self.fXaxis.fXmax
+        numbins = self._fXaxis._fNbins
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
         if datum < low:
             self[0] += weight
         elif datum >= high:
@@ -133,9 +133,9 @@ class Methods(uproot_methods.base.ROOTMethods):
             self[int(math.floor(numbins * (datum - low) / (high - low))) + 1] += weight
 
     def fillall(self, data):
-        numbins = self.fXaxis.fNbins
-        low = self.fXaxis.fXmin
-        high = self.fXaxis.fXmax
+        numbins = self._fXaxis._fNbins
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
 
         if not isinstance(data, numpy.ndarray):
             data = numpy.array(data)
@@ -148,9 +148,9 @@ class Methods(uproot_methods.base.ROOTMethods):
         self[-1] += (data >= high).sum()
 
     def fillallw(self, data, weights):
-        numbins = self.fXaxis.fNbins
-        low = self.fXaxis.fXmin
-        high = self.fXaxis.fXmax
+        numbins = self._fXaxis._fNbins
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
 
         if not isinstance(data, numpy.ndarray):
             data = numpy.array(data)
@@ -182,10 +182,10 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def xlabels(self):
-        if self.fXaxis.fLabels is None:
+        if self._fXaxis._fLabels is None:
             return None
         else:
-            return [str(x) for x in self.fXaxis.fLabels]
+            return [str(x) for x in self._fXaxis._fLabels]
 
     def show(self, width=80, minimum=None, maximum=None, stream=sys.stdout):
         if minimum is None:
