@@ -33,13 +33,15 @@ import numpy
 import uproot_methods.base
 
 class ArrayMethods(uproot_methods.base.ROOTMethods):
-    @classmethod
-    def _ttree(cls, data):
-        out = cls.__new__(cls)
-        out.fX = data["fX"]
-        out.fY = data["fY"]
-        out.fZ = data["fZ"]
-        return out
+    pass
+
+class Methods(ArrayMethods):
+    _arraymethods = ArrayMethods
+
+    def __init__(self, data):
+        self.fX = data["fX"]
+        self.fY = data["fX"]
+        self.fZ = data["fX"]
 
     @classmethod
     def origin(cls):
@@ -304,14 +306,9 @@ class ArrayMethods(uproot_methods.base.ROOTMethods):
     def isperpendicular(self, other):
         return self.dot(other) == 0
 
-class Methods(ArrayMethods):
-    def __init__(self, x=0.0, y=0.0, z=0.0):
-        self.fX = x
-        self.fY = y
-        self.fZ = z
-
     def __repr__(self):
         return "TVector3({0:.4g}, {1:.4g}, {2:.4g})".format(self.fX, self.fY, self.fZ)
 
     def __str__(self):
-        return str((self.fX, self.fY, self.fZ))
+        return repr(self)
+        # return str((self.fX, self.fY, self.fZ))

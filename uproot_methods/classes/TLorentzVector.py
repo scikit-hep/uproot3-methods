@@ -41,16 +41,9 @@ class ArrayMethods(uproot_methods.base.ROOTMethods):
 class Methods(ArrayMethods):
     _arraymethods = ArrayMethods
 
-    @classmethod
-    def _ttree(cls, data):
-        out = cls.__new__(cls)
-        out.fP = uproot_methods.classes.TVector3.Methods._ttree(data)
-        out.fE = data["fE"]
-        return out
-
-    def __init__(self, x=0.0, y=0.0, z=0.0, t=0.0):
-        self.fP = uproot_methods.classes.TVector3.Methods(x, y, z)
-        self.fE = t
+    def __init__(self, data):
+        self.fP = uproot_methods.classes.TVector3.Methods(data)
+        self.fE = data["fE"]
 
     @classmethod
     def from4vector(cls, other):
