@@ -30,12 +30,14 @@
 
 import math
 
+import awkward.util
+
 class Common(object):
     def mag2(self):
         return self.dot(self)
 
     def mag(self):
-        return awkward.util.numpy.sqrt(self.mag2)
+        return awkward.util.numpy.sqrt(self.mag2())
 
     def rho2(self):
         out = self.x * self.x
@@ -133,7 +135,7 @@ class Methods(Common):
         r = self.dot(other) / math.sqrt(m1 * m2)
         return max(-1.0, min(1.0, r))
 
-    def angle(self, other, degrees=Fales):
+    def angle(self, other, degrees=False):
         out = math.acos(self.cosdelta(other))
         if degrees:
             out *= 180.0/math.pi

@@ -30,6 +30,23 @@
 
 import unittest
 
-class TestPlaceholder(unittest.TestCase):
+import numpy
+
+from uproot_methods import *
+from awkward import *
+
+class Test(unittest.TestCase):
     def runTest(self):
         pass
+
+    def test_object(self):
+        a = TVector2(4.4, 5.5)
+        self.assertEqual(a.dot(a), 49.61)
+
+    def test_array(self):
+        a = TVector2Array(numpy.zeros(10), numpy.arange(10))
+        print(a)
+        print(a.x)
+        print(a.y)
+        print(a.mag())
+        print(a + 1000)

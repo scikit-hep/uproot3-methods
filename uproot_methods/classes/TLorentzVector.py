@@ -41,7 +41,7 @@ class Common(object):
     def E(self):
         return self.t
 
-    @energy.setter
+    @E.setter
     def E(self, value):
         self.t = value
 
@@ -187,7 +187,7 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
     def t(self):
         return self["fE"]
 
-    @e.setter
+    @t.setter
     def t(self, value):
         self["fE"] = value
 
@@ -346,7 +346,7 @@ class Methods(uproot_methods.base.ROOTMethods, Common):
     def t(self):
         return self._fE
 
-    @e.setter
+    @t.setter
     def t(self, value):
         self._fE = value
 
