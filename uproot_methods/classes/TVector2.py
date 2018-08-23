@@ -28,37 +28,36 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import math
+
+import awkward
 import awkward.util
 
 import uproot_methods.common.TVector
 import uproot_methods.base
-
+    
 class Common(object):
-    @property
-    def x(self):
-        return self._fX
-
-    @x.setter
-    def x(self, value):
-        self._fX = value
-
-    @property
-    def y(self):
-        return self._fY
-
-    @y.setter
-    def y(self, value):
-        self._fY = value
-
     def dot(self, other):
         out = self.x * other.x
         out += self.y * other.y
         return out
 
 class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.ArrayMethods):
-    def __init__(self, data):
-        self._fX = data["fX"]
-        self._fY = data["fY"]
+    @property
+    def x(self):
+        return self["fX"]
+
+    @x.setter
+    def x(self, value):
+        self["fX"] = value
+
+    @property
+    def y(self):
+        return self["fY"]
+
+    @y.setter
+    def y(self, value):
+        self["fY"] = value
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if method != "__call__":
@@ -78,15 +77,59 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
         resulty = getattr(ufunc, method)(*inputsy, **kwargs)
 
         if isinstance(resultx, tuple) and isinstance(resulty, tuple):
-            return tuple(self.__class__({"fX": x, "fY": y}) for x, y in zip(resultx, resulty))
+            return tuple(self.like({"fX": x, "fY": y}) for x, y in zip(resultx, resulty))
         elif method == "at":
             return None
         else:
-            return self.__class__({"fX": resultx, "fY": resulty})
+            return self.like({"fX": resultx, "fY": resulty})
 
 class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.Methods):
     _arraymethods = ArrayMethods
 
+    @property
+    def x(self):
+        return self._fX
+
+    @x.setter
+    def x(self, value):
+        self._fX = value
+
+    @property
+    def y(self):
+        return self._fY
+
+    @y.setter
+    def y(self, value):
+        self._fY = value
+
+    def __repr__(self):
+        return "TVector2({0:.4g}, {1:.4g})".format(self.x, self.y)
+
+    def __str__(self):
+        return repr(self)
+
+class TVector2Array(ArrayMethods, awkward.ObjectArray):
+    def __init__(self, x, y):
+        super(TVector2Array, self).__init__(awkward.Table(min(len(x), len(y))), lambda row: TVector2(row["fX"], row["fY"]))
+        self["fX"] = x
+        self["fY"] = y
+
+    @classmethod
+    def origin(cls, shape, dtype=None):
+        if dtype is None:
+            dtype = awkward.util.numpy.float64
+        return cls(awkward.util.numpy.zeros(shape, dtype=dtype), awkward.util.numpy.zeros(shape, dtype=dtype))
+
+    @classmethod
+    def origin_like(cls, array):
+        return cls.origin(array.shape, array.dtype)
+
+    @classmethod
+    def from_circular(cls, rho, phi):
+        return cls(rho * awkward.util.numpy.cos(phi),
+                   rho * awkward.util.numpy.sin(phi))
+
+class TVector2(Methods):
     def __init__(self, x, y):
         self._fX = x
         self._fY = y
@@ -97,5 +140,5 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
 
     @classmethod
     def from_circular(cls, rho, phi):
-        return cls(rho * awkward.util.numpy.cos(phi),
-                   rho * awkward.util.numpy.sin(phi))
+        return cls(rho * math.cos(phi),
+                   rho * math.sin(phi))

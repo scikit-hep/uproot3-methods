@@ -30,60 +30,13 @@
 
 import math
 
+import awkward
 import awkward.util
 
 import uproot_methods.base
 import uproot_methods.classes.TVector3
 
 class Common(object):
-    @property
-    def vect(self):
-        return self._fP
-
-    @vect.setter
-    def vect(self, value):
-        self._fP = value
-
-    @property
-    def x(self):
-        return self.p.x
-
-    @x.setter
-    def x(self, value):
-        self.p.x = value
-
-    @property
-    def y(self):
-        return self.p.y
-
-    @y.setter
-    def y(self, value):
-        self.p.y = value
-
-    @property
-    def z(self):
-        return self.p.z
-
-    @z.setter
-    def z(self, value):
-        self.p.z = value
-
-    @property
-    def t(self):
-        return self._fE
-
-    @e.setter
-    def t(self, value):
-        self._fE = value
-
-    @property
-    def energy(self):
-        return self.t
-
-    @energy.setter
-    def energy(self, value):
-        self.t = value
-
     @property
     def E(self):
         return self.t
@@ -99,6 +52,9 @@ class Common(object):
         out -= self.z * other.z
         return out
 
+    def energy(self):
+        return self.t
+
     def p(self):
         return self.vect.mag()
 
@@ -112,7 +68,7 @@ class Common(object):
         return self.vect.rho()
 
     def Et(self):
-        return self.energy * self.pt / self.p
+        return self.energy() * self.pt() / self.p()
 
     def mass2(self):
         return self.mag2()
@@ -121,7 +77,7 @@ class Common(object):
         return self.mag()
 
     def mt2(self):
-        return self.energy**2 - self.z**2
+        return self.energy()**2 - self.z**2
         
     def phi(self):
         return self.vect.phi()
@@ -165,27 +121,73 @@ class Common(object):
         return self.mag2() > tolerance
 
 class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
-    def __init__(self, data):
-        self._fP = uproot_methods.classes.TVector3.ArrayMethods(data)
-        self._fE = data["fE"]
+    @property
+    def vect(self):
+        out = self.like()
+        out["fX"] = self.x
+        out["fY"] = self.y
+        out["fZ"] = self.z
+        if isinstance(out, awkward.ObjectArray):
+            out.generator = lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"])
+        return out
+
+    @vect.setter
+    def vect(self, value):
+        self["fX"] = value["fX"]
+        self["fY"] = value["fY"]
+        self["fZ"] = value["fZ"]
+
+    @property
+    def x(self):
+        return self["fX"]
+
+    @x.setter
+    def x(self, value):
+        self["fX"] = value
+
+    @property
+    def y(self):
+        return self["fY"]
+
+    @y.setter
+    def y(self, value):
+        self["fY"] = value
+
+    @property
+    def z(self):
+        return self["fZ"]
+
+    @z.setter
+    def z(self, value):
+        self["fZ"] = value
+
+    @property
+    def t(self):
+        return self["fE"]
+
+    @e.setter
+    def t(self, value):
+        self["fE"] = value
 
     def mt(self):
-        out = self.mt2()
-        sign = awkward.util.numpy.sign(out)
-        awkward.util.numpy.absolute(out, out=out)
-        awkward.util.numpy.sqrt(out, out=out)
-        return awkward.util.numpy.multiply(out, sign, out=out)
+        mt2 = self.mt2()
+        sign = awkward.util.numpy.sign(mt2)
+        return awkward.util.numpy.sqrt(awkward.util.numpy.absolute(mt2)) * sign
 
     def eta(self):
-        return -awkward.util.numpy.log((1.0 - awkward.util.numpy.cos(self.theta())) / (1.0 + awkward.util.numpy.cos(self.theta())))/2.0
+        return -awkward.util.numpy.log((1.0 - awkward.util.numpy.cos(self.theta())) / (1.0 + awkward.util.numpy.cos(self.theta()))) / 2.0
 
     def rapidity(self):
         return awkward.util.numpy.log((self.t + self.z) / (self.t - self.z)) / 2.0
 
     def boost_vector(self):
-        return uproot_methods.classes.TVector3.ArrayMethods({"fX": self.x/self.t,
-                                                             "fY": self.y/self.t,
-                                                             "fZ": self.z/self.t})
+        out = self.like()
+        out["fX"] = self.x / self.t
+        out["fY"] = self.y / self.t
+        out["fZ"] = self.z / self.t
+        if isinstance(out, awkward.ObjectArray):
+            out.generator = lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"])
+        return out
 
     def boost(self, vect, inplace=False):
         b2 = vect.mag2()
@@ -206,8 +208,7 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
 
     def gamma(self):
         out = self.beta()
-        mask = (out < 1)
-        awkward.util.numpy.bitwise_and(mask, out > -1, out=mask)
+        mask = (out < 1) & (out > -1)
         out[mask] = (1 - out[mask]**2)**(-0.5)
         out[~mask] = awkward.util.numpy.inf
         return out
@@ -217,56 +218,99 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
 
     def rotate_axis(self, axis, angle):
         vect, t = self._rotate_axis(axis, angle)
-        return self.__class__({"fX": vect.x, "fY": vect.y, "fZ": vect.z, "fE": t})
+        out = self.like()
+        out["fX"] = vect.x
+        out["fY"] = vect.y
+        out["fZ"] = vect.z
+        out["fE"] = t
+        return out
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         vect, t = self._rotate_euler(phi, theta, psi)
-        return self.__class__({"fX": vect.x, "fY": vect.y, "fZ": vect.z, "fE": t})
+        out = self.like()
+        out["fX"] = vect.x
+        out["fY"] = vect.y
+        out["fZ"] = vect.z
+        out["fE"] = t
+        return out
 
     def islightlike(self, tolerance=1e-10):
         return awkward.util.numpy.absolute(self.mag2()) < tolerance
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        raise NotImplementedError
+        if method != "__call__":
+            raise NotImplemented
+
+        inputsx = []
+        inputsy = []
+        inputsz = []
+        inputst = []
+        for obj in inputs:
+            if isinstance(obj, ArrayMethods):
+                inputsx.append(obj.x)
+                inputsy.append(obj.y)
+                inputsz.append(obj.z)
+                inputst.append(obj.t)
+            else:
+                inputsx.append(obj)
+                inputsy.append(obj)
+                inputsz.append(obj)
+                inputst.append(obj)
+
+        resultx = getattr(ufunc, method)(*inputsx, **kwargs)
+        resulty = getattr(ufunc, method)(*inputsy, **kwargs)
+        resultz = getattr(ufunc, method)(*inputsz, **kwargs)
+        resultt = getattr(ufunc, method)(*inputst, **kwargs)
+
+        if isinstance(resultx, tuple) and isinstance(resulty, tuple) and isinstance(resultz, tuple) and isinstance(resultt, tuple):
+            return tuple(self.like({"fX": x, "fY": y, "fZ": z, "fE": t}) for x, y, z, t in zip(resultx, resulty, resultz, resultt))
+        elif method == "at":
+            return None
+        else:
+            return self.like({"fX": resultx, "fY": resulty, "fZ": resultz, "fE": resultt})
 
 class Methods(uproot_methods.base.ROOTMethods, Common):
     _arraymethods = ArrayMethods
 
-    def __init__(self, x, y, z, t):
-        self._fP = uproot_methods.classes.TVector3.Methods(x, y, z)
-        self._fE = t
+    @property
+    def vect(self):
+        return self._fP
 
-    @classmethod
-    def origin(cls):
-        return cls(0.0, 0.0, 0.0, 0.0)
+    @vect.setter
+    def vect(self, value):
+        self._fP = value
 
-    @classmethod
-    def from_vect(cls, vect, t):
-        return cls(vect.x, vect.y, vect.z, t)
+    @property
+    def x(self):
+        return self.p.x
 
-    @classmethod
-    def from_spherical(cls, r, theta, phi, t):
-        return cls.from_vect(uproot_methods.classes.TVector3.Methods.from_spherical(r, theta, phi), t)
+    @x.setter
+    def x(self, value):
+        self.p.x = value
 
-    @classmethod
-    def from_cylindrical(cls, rho, phi, z, t):
-        return cls.from_vect(uproot_methods.classes.TVector3.Methods.from_cylindrical(rho, phi, z), t)
+    @property
+    def y(self):
+        return self.p.y
 
-    @classmethod
-    def from_xyzm(cls, x, y, z, m):
-        return cls(x, y, z, math.sqrt(x*x + y*y + z*z + m*m*(1 if m >= 0 else -1)))
+    @y.setter
+    def y(self, value):
+        self.p.y = value
 
-    @classmethod
-    def from_ptetaphi(cls, pt, eta, phi, energy):
-        return cls(pt * math.cos(phi),
-                   pt * math.sin(phi),
-                   pt * math.sinh(eta),
-                   t)
-    
-    @classmethod
-    def from_ptetaphim(cls, pt, eta, phi, m):
-        tmp = Methods.from_ptetaphi(pt, eta, phi, 0)
-        return Methods.from_xyzm(tmp.x, tmp.y, tmp.z, m)
+    @property
+    def z(self):
+        return self.p.z
+
+    @z.setter
+    def z(self, value):
+        self.p.z = value
+
+    @property
+    def t(self):
+        return self._fE
+
+    @e.setter
+    def t(self, value):
+        self._fE = value
 
     def mt(self):
         out = self.mt2()
@@ -282,7 +326,7 @@ class Methods(uproot_methods.base.ROOTMethods, Common):
         return math.log((self.t + self.z) / (self.t - self.z)) / 2.0
 
     def boost_vector(self):
-        return uproot_methods.classes.TVector3.Methods(self.x/self.t, self.y/self.t, self.z/self.t)
+        return uproot_methods.classes.TVector3.TVector3(self.x/self.t, self.y/self.t, self.z/self.t)
 
     def boost(self, vect, inplace=False):
         b2 = vect.mag2()
@@ -321,3 +365,98 @@ class Methods(uproot_methods.base.ROOTMethods, Common):
 
     def islightlike(self, tolerance=1e-10):
         return abs(self.mag2()) < tolerance
+
+    def __repr__(self):
+        return "TLorentzVector({0:.4g}, {1:.4g}, {2:.4g}, {3:.4g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
+
+    def __str__(self):
+        return repr(self)
+
+class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
+    def __init__(self, x, y, z, t):
+        super(TLorentzVectorArray, self).__init__(awkward.Table(min(len(x), len(y), len(z), len(t))), lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
+        self["fX"] = x
+        self["fY"] = y
+        self["fZ"] = z
+        self["fE"] = t
+
+    @classmethod
+    def origin(cls, shape, dtype=None):
+        if dtype is None:
+            dtype = awkward.util.numpy.float64
+        return cls(awkward.util.numpy.zeros(shape, dtype=dtype),
+                   awkward.util.numpy.zeros(shape, dtype=dtype),
+                   awkward.util.numpy.zeros(shape, dtype=dtype),
+                   awkward.util.numpy.zeros(shape, dtype=dtype))
+
+    @classmethod
+    def origin_like(cls, array):
+        return cls.origin(array.shape, array.dtype)
+
+    @classmethod
+    def from_vect(cls, vect, t):
+        return cls(vect["fX"], vect["fY"], vect["fZ"], t)
+
+    @classmethod
+    def from_spherical(cls, r, theta, phi, t):
+        return cls(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t)
+
+    @classmethod
+    def from_cylindrical(cls, rho, phi, z, t):
+        return cls(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t)
+
+    @classmethod
+    def from_xyzm(cls, x, y, z, m):
+        return cls(x, y, z, awkward.util.numpy.sqrt(x*x + y*y + z*z + m*m*awkward.util.numpy.sign(m)))
+
+    @classmethod
+    def from_ptetaphi(cls, pt, eta, phi, energy):
+        return cls(pt * awkward.util.numpy.cos(phi),
+                   pt * awkward.util.numpy.sin(phi),
+                   pt * awkward.util.numpy.sinh(eta),
+                   energy)
+
+    @classmethod
+    def from_ptetaphim(cls, pt, eta, phi, mass):
+        tmp = cls.from_ptetaphi(pt, eta, phi, awkward.util.numpy.zeros_like(pt))
+        return cls.from_xyzm(tmp.x, tmp.y, tmp.z, mass)
+
+class TLorentzVector(Methods):
+    def __init__(self, x, y, z, t):
+        self._fP = uproot_methods.classes.TVector3.TVector3(x, y, z)
+        self._fE = t
+
+    @classmethod
+    def origin(cls):
+        return cls(0.0, 0.0, 0.0, 0.0)
+
+    @classmethod
+    def from_vect(cls, vect, t):
+        out = cls.__new__(cls)
+        out._fP = vect
+        out._fE = t
+        return out
+
+    @classmethod
+    def from_spherical(cls, r, theta, phi, t):
+        return cls.from_vect(uproot_methods.classes.TVector3.Methods.from_spherical(r, theta, phi), t)
+
+    @classmethod
+    def from_cylindrical(cls, rho, phi, z, t):
+        return cls.from_vect(uproot_methods.classes.TVector3.Methods.from_cylindrical(rho, phi, z), t)
+
+    @classmethod
+    def from_xyzm(cls, x, y, z, m):
+        return cls(x, y, z, math.sqrt(x*x + y*y + z*z + m*m*(1 if m >= 0 else -1)))
+
+    @classmethod
+    def from_ptetaphi(cls, pt, eta, phi, energy):
+        return cls(pt * math.cos(phi),
+                   pt * math.sin(phi),
+                   pt * math.sinh(eta),
+                   energy)
+    
+    @classmethod
+    def from_ptetaphim(cls, pt, eta, phi, mass):
+        tmp = cls.from_ptetaphi(pt, eta, phi, 0)
+        return cls.from_xyzm(tmp.x, tmp.y, tmp.z, mass)

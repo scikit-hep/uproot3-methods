@@ -30,36 +30,13 @@
 
 import math
 
+import awkward
 import awkward.util
 
 import uproot_methods.base
 import uproot_methods.common.TVector
 
 class Common(object):
-    @property
-    def x(self):
-        return self._fX
-
-    @x.setter
-    def x(self, value):
-        self._fX = value
-
-    @property
-    def y(self):
-        return self._fY
-
-    @y.setter
-    def y(self, value):
-        self._fY = value
-
-    @property
-    def z(self):
-        return self._fZ
-
-    @z.setter
-    def z(self, value):
-        self._fZ = value
-
     def dot(self, other):
         out = self.x * other.x
         out += self.y * other.y
@@ -127,26 +104,44 @@ class Common(object):
         return self.rotate_axis(Methods(0.0, 0.0, 1.0), angle)
 
 class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.ArrayMethods):
-    def __init__(self, data):
-        self._fX = data["fX"]
-        self._fY = data["fY"]
-        self._fZ = data["fZ"]
+    @property
+    def x(self):
+        return self["fX"]
+
+    @x.setter
+    def x(self, value):
+        self["fX"] = value
+
+    @property
+    def y(self):
+        return self["fY"]
+
+    @y.setter
+    def y(self, value):
+        self["fY"] = value
+
+    @property
+    def z(self):
+        return self["fZ"]
+
+    @z.setter
+    def z(self, value):
+        self["fZ"] = value
 
     def cross(self, other):
         x, y, z = self._cross(other)
-        return self.__class__({"fX": x, "fY": y, "fZ": z})
+        return self.like({"fX": x, "fY": y, "fZ": z})
 
     def theta(self):
-        out = self.rho()
-        return awkward.util.numpy.arctan2(out, self.z, out=out)
+        return self.like(awkward.util.numpy.arctan2(self.rho(), self.z))
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)
-        return self.__class__({"fX": x, "fY": y, "fZ": z})
+        return self.like({"fX": x, "fY": y, "fZ": z})
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         x, y, z = self._rotate_euler(phi, theta, psi)
-        return self.__class__({"fX": x, "fY": y, "fZ": z})
+        return self.like({"fX": x, "fY": y, "fZ": z})
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if method != "__call__":
@@ -170,15 +165,97 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
         resultz = getattr(ufunc, method)(*inputsz, **kwargs)
 
         if isinstance(resultx, tuple) and isinstance(resulty, tuple) and isinstance(resultz, tuple):
-            return tuple(self.__class__({"fX": x, "fY": y, "fZ": z}) for x, y, z in zip(resultx, resulty, resultz))
+            return tuple(self.like({"fX": x, "fY": y, "fZ": z}) for x, y, z in zip(resultx, resulty, resultz))
         elif method == "at":
             return None
         else:
-            return self.__class__({"fX": resultx, "fY": resulty, "fZ": resultz})
+            return self.like({"fX": resultx, "fY": resulty, "fZ": resultz})
 
 class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.Methods):
     _arraymethods = ArrayMethods
 
+    @property
+    def x(self):
+        return self._fX
+
+    @x.setter
+    def x(self, value):
+        self._fX = value
+
+    @property
+    def y(self):
+        return self._fY
+
+    @y.setter
+    def y(self, value):
+        self._fY = value
+
+    @property
+    def z(self):
+        return self._fZ
+
+    @z.setter
+    def z(self, value):
+        self._fZ = value
+
+    def __repr__(self):
+        return "TVector3({0:.4g}, {1:.4g}, {2:.4g})".format(self.x, self.y, self.z)
+
+    def __str__(self):
+        return repr(self)
+
+    def cross(self, other):
+        x, y, z = self._cross(other)
+        return self.__class__(x, y, z)
+
+    def theta(self):
+        return math.atan2(self.rho(), self.z)
+
+    def rotate_axis(self, axis, angle):
+        x, y, z = self._rotate_axis(axis, angle)
+        return self.__class__(x, y, z)
+
+    def rotate_euler(self, phi=0, theta=0, psi=0):
+        return self.__class__(x, y, z)
+
+    def __repr__(self):
+        return "TVector3({0:.4g}, {1:.4g}, {2:.4g})".format(self.x, self.y, self.z)
+
+    def __str__(self):
+        return repr(self)
+
+class TVector3Array(ArrayMethods, awkward.ObjectArray):
+    def __init__(self, x, y, z):
+        super(TVector3Array, self).__init__(awkward.Table(min(len(x), len(y), len(z))), lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
+        self["fX"] = x
+        self["fY"] = y
+        self["fZ"] = z
+
+    @classmethod
+    def origin(cls, shape, dtype=None):
+        if dtype is None:
+            dtype = awkward.util.numpy.float64
+        return cls(awkward.util.numpy.zeros(shape, dtype=dtype),
+                   awkward.util.numpy.zeros(shape, dtype=dtype),
+                   awkward.util.numpy.zeros(shape, dtype=dtype))
+
+    @classmethod
+    def origin_like(cls, array):
+        return cls.origin(array.shape, array.dtype)
+
+    @classmethod
+    def from_spherical(cls, r, theta, phi):
+        return cls(r * awkward.util.numpy.sin(theta) * awkward.util.numpy.cos(phi),
+                   r * awkward.util.numpy.sin(theta) * awkward.util.numpy.sin(phi),
+                   r * awkward.util.numpy.cos(theta))
+
+    @classmethod
+    def from_cylindrical(cls, r, rho, phi, z):
+        return cls(rho * awkward.util.numpy.cos(phi),
+                   rho * awkward.util.numpy.sin(phi),
+                   z)
+
+class TVector3(Methods):
     def __init__(self, x, y, z):
         self._fX = x
         self._fY = y
@@ -199,23 +276,3 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
         return cls(rho * math.cos(phi),
                    rho * math.sin(phi),
                    z)
-
-    def __repr__(self):
-        return "TVector3({0:.4g}, {1:.4g}, {2:.4g})".format(self._fX, self._fY, self._fZ)
-
-    def __str__(self):
-        return repr(self)
-
-    def cross(self, other):
-        x, y, z = self._cross(other)
-        return self.__class__(x, y, z)
-
-    def theta(self):
-        return math.atan2(self.rho(), self.z)
-
-    def rotate_axis(self, axis, angle):
-        x, y, z = self._rotate_axis(axis, angle)
-        return self.__class__(x, y, z)
-
-    def rotate_euler(self, phi=0, theta=0, psi=0):
-        return self.__class__(x, y, z)
