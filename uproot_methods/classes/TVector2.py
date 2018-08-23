@@ -60,22 +60,6 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
         self._fX = data["fX"]
         self._fY = data["fY"]
 
-    @classmethod
-    def origin(cls, shape, dtype=None):
-        if dtype is None:
-            dtype = awkward.util.numpy.float64
-        return cls({"fX": awkward.util.numpy.zeros(shape, dtype=dtype),
-                    "fY": awkward.util.numpy.zeros(shape, dtype=dtype)})
-
-    @classmethod
-    def origin_like(cls, array):
-        return cls.origin(array.shape, array.dtype)
-
-    @classmethod
-    def from_circular(cls, rho, phi):
-        return cls({"fX": rho * awkward.util.numpy.cos(phi),
-                    "fY": rho * awkward.util.numpy.sin(phi)})
-
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if method != "__call__":
             raise NotImplemented

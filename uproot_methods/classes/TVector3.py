@@ -32,8 +32,8 @@ import math
 
 import awkward.util
 
-import uproot_methods.common.TVector
 import uproot_methods.base
+import uproot_methods.common.TVector
 
 class Common(object):
     @property
@@ -71,8 +71,10 @@ class Common(object):
                 self.z*other.x - self.x*other.z,
                 self.x*other.y - self.y*other.x)
 
-    def r2(self):
-        return self.dot(self)
+    def cottheta(self):
+        out = self.rho()
+        out /= self.z
+        return out
 
     def _rotate_axis(self, axis, angle):
         u = axis.unit()
@@ -116,43 +118,19 @@ class Common(object):
         return x, y, z
 
     def rotatex(self, angle):
-        return self.rotate_axis(TVector3(1.0, 0.0, 0.0), angle)
+        return self.rotate_axis(Methods(1.0, 0.0, 0.0), angle)
 
     def rotatey(self, angle):
-        return self.rotate_axis(TVector3(0.0, 1.0, 0.0), angle)
+        return self.rotate_axis(Methods(0.0, 1.0, 0.0), angle)
 
     def rotatez(self, angle):
-        return self.rotate_axis(TVector3(0.0, 0.0, 1.0), angle)
+        return self.rotate_axis(Methods(0.0, 0.0, 1.0), angle)
 
 class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.ArrayMethods):
     def __init__(self, data):
         self._fX = data["fX"]
         self._fY = data["fY"]
         self._fZ = data["fZ"]
-
-    @classmethod
-    def origin(cls, shape, dtype=None):
-        if dtype is None:
-            dtype = awkward.util.numpy.float64
-        return cls({"fX": awkward.util.numpy.zeros(shape, dtype=dtype),
-                    "fY": awkward.util.numpy.zeros(shape, dtype=dtype),
-                    "fZ": awkward.util.numpy.zeros(shape, dtype=dtype)})
-
-    @classmethod
-    def origin_like(cls, array):
-        return cls.origin(array.shape, array.dtype)
-
-    @classmethod
-    def from_spherical(cls, r, theta, phi):
-        return cls({"fX": r * awkward.util.numpy.sin(theta) * awkward.util.numpy.cos(phi),
-                    "fY": r * awkward.util.numpy.sin(theta) * awkward.util.numpy.sin(phi),
-                    "fZ": r * awkward.util.numpy.cos(theta)})
-
-    @classmethod
-    def from_cylindrical(cls, rho, phi, z):
-        return cls({"fX": rho * awkward.util.numpy.cos(phi),
-                    "fY": rho * awkward.util.numpy.sin(phi),
-                    "fZ": z})
 
     def cross(self, other):
         x, y, z = self._cross(other)
@@ -161,10 +139,6 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
     def theta(self):
         out = self.rho()
         return awkward.util.numpy.arctan2(out, self.z, out=out)
-
-    def r(self):
-        out = self.r2()
-        return awkward.util.numpy.sqrt(out, out=out)
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)
@@ -238,9 +212,6 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
 
     def theta(self):
         return math.atan2(self.rho(), self.z)
-
-    def r(self):
-        return math.sqrt(self.r2())
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)

@@ -42,11 +42,8 @@ class Common(object):
         out += self.y * self.y
         return out
 
-    def pt2(self):
-        return self.rho2()
-
-    def pt(self):
-        return self.rho()
+    def delta_phi(self, other):
+        return (self.phi() - other.phi() + math.pi) % (2*math.pi) - math.pi
 
     def isparallel(self, other, tolerance=1e-10):
         return 1 - self.cosdelta(other) < tolerance
@@ -63,6 +60,13 @@ class ArrayMethods(Common):
             self /= self.mag()
         else:
             return self / self.mag()
+
+    def rho(self):
+        out = self.rho2()
+        return awkward.util.numpy.sqrt(out, out=out)
+
+    def phi(self):
+        return awkward.util.numpy.arctan2(self.y, self.x)
 
     def cosdelta(self, other):
         denom = self.mag2()
@@ -88,13 +92,6 @@ class ArrayMethods(Common):
         if degrees:
             awkward.util.numpy.multiply(out, 180.0/awkward.util.numpy.pi, out=out)
         return out
-
-    def phi(self):
-        return awkward.util.numpy.arctan2(self.y, self.x)
-
-    def rho(self):
-        out = self.rho2()
-        return awkward.util.numpy.sqrt(out, out=out)
 
     def isopposite(self, other, tolerance=1e-10):
         tmp = self + other
@@ -122,6 +119,12 @@ class Methods(Common):
     def unit(self):
         return self / self.mag()
 
+    def rho(self):
+        return math.sqrt(self.rho2())
+
+    def phi(self):
+        return math.atan2(self.y, self.x)
+
     def cosdelta(self, other):
         m1 = self.mag2()
         m2 = other.mag2()
@@ -135,12 +138,6 @@ class Methods(Common):
         if degrees:
             out *= 180.0/math.pi
         return out
-
-    def phi(self):
-        return math.atan2(self.y, self.x)
-
-    def rho(self):
-        return math.sqrt(self.rho2())
 
     def isopposite(self, other, tolerance=1e-10):
         tmp = self + other
