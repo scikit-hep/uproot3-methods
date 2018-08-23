@@ -77,11 +77,21 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
         resulty = getattr(ufunc, method)(*inputsy, **kwargs)
 
         if isinstance(resultx, tuple) and isinstance(resulty, tuple):
-            return tuple(self.like({"fX": x, "fY": y}) for x, y in zip(resultx, resulty))
+            out = []
+            for x, y in zip(resultx, resulty):
+                out.append(self.empty_like())
+                out[-1]["fX"] = x
+                out[-1]["fY"] = y
+            return tuple(out)
+
         elif method == "at":
             return None
+
         else:
-            return self.like({"fX": resultx, "fY": resulty})
+            out = self.empty_like()
+            out["fX"] = resultx
+            out["fY"] = resulty
+            return out
 
 class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.Methods):
     _arraymethods = ArrayMethods

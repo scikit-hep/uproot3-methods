@@ -123,7 +123,7 @@ class Common(object):
 class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
     @property
     def vect(self):
-        out = self.like()
+        out = self.empty_like()
         out["fX"] = self.x
         out["fY"] = self.y
         out["fZ"] = self.z
@@ -181,7 +181,7 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
         return awkward.util.numpy.log((self.t + self.z) / (self.t - self.z)) / 2.0
 
     def boost_vector(self):
-        out = self.like()
+        out = self.empty_like()
         out["fX"] = self.x / self.t
         out["fY"] = self.y / self.t
         out["fZ"] = self.z / self.t
@@ -218,7 +218,7 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
 
     def rotate_axis(self, axis, angle):
         vect, t = self._rotate_axis(axis, angle)
-        out = self.like()
+        out = self.empty_like()
         out["fX"] = vect.x
         out["fY"] = vect.y
         out["fZ"] = vect.z
@@ -227,7 +227,7 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         vect, t = self._rotate_euler(phi, theta, psi)
-        out = self.like()
+        out = self.empty_like()
         out["fX"] = vect.x
         out["fY"] = vect.y
         out["fZ"] = vect.z
@@ -263,11 +263,25 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common):
         resultt = getattr(ufunc, method)(*inputst, **kwargs)
 
         if isinstance(resultx, tuple) and isinstance(resulty, tuple) and isinstance(resultz, tuple) and isinstance(resultt, tuple):
-            return tuple(self.like({"fX": x, "fY": y, "fZ": z, "fE": t}) for x, y, z, t in zip(resultx, resulty, resultz, resultt))
+            out = []
+            for x, y, z, t in zip(resultx, resulty, resultz, resultt):
+                out.append(self.empty_like())
+                out[-1]["fX"] = x
+                out[-1]["fY"] = y
+                out[-1]["fZ"] = z
+                out[-1]["fE"] = t
+            return tuple(out)
+
         elif method == "at":
             return None
+
         else:
-            return self.like({"fX": resultx, "fY": resulty, "fZ": resultz, "fE": resultt})
+            out = self.empty_like()
+            out["fX"] = resultx
+            out["fY"] = resulty
+            out["fZ"] = resultz
+            out["fE"] = resultt
+            return out
 
 class Methods(uproot_methods.base.ROOTMethods, Common):
     _arraymethods = ArrayMethods

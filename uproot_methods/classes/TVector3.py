@@ -130,18 +130,30 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
 
     def cross(self, other):
         x, y, z = self._cross(other)
-        return self.like({"fX": x, "fY": y, "fZ": z})
+        out = self.empty_like()
+        out["fX"] = x
+        out["fY"] = y
+        out["fZ"] = z
+        return out
 
     def theta(self):
         return self.like(awkward.util.numpy.arctan2(self.rho(), self.z))
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)
-        return self.like({"fX": x, "fY": y, "fZ": z})
+        out = self.empty_like()
+        out["fX"] = x
+        out["fY"] = y
+        out["fZ"] = z
+        return out
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         x, y, z = self._rotate_euler(phi, theta, psi)
-        return self.like({"fX": x, "fY": y, "fZ": z})
+        out = self.empty_like()
+        out["fX"] = x
+        out["fY"] = y
+        out["fZ"] = z
+        return out
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if method != "__call__":
@@ -165,11 +177,23 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
         resultz = getattr(ufunc, method)(*inputsz, **kwargs)
 
         if isinstance(resultx, tuple) and isinstance(resulty, tuple) and isinstance(resultz, tuple):
-            return tuple(self.like({"fX": x, "fY": y, "fZ": z}) for x, y, z in zip(resultx, resulty, resultz))
+            out = []
+            for x, y, z in zip(resultx, resulty, resultz):
+                out.append(self.empty_like())
+                out[-1]["fX"] = x
+                out[-1]["fY"] = y
+                out[-1]["fZ"] = z
+            return tuple(out)
+
         elif method == "at":
             return None
+
         else:
-            return self.like({"fX": resultx, "fY": resulty, "fZ": resultz})
+            out = self.empty_like()
+            out["fX"] = resultx
+            out["fY"] = resulty
+            out["fZ"] = resultz
+            return out
 
 class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.Methods):
     _arraymethods = ArrayMethods
