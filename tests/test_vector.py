@@ -39,11 +39,11 @@ class Test(unittest.TestCase):
     def runTest(self):
         pass
 
-    def test_object(self):
+    def test_vector2(self):
         a = TVector2(4.4, 5.5)
         self.assertEqual(a.dot(a), 49.61)
         
-    def test_array(self):
+    def test_vector2_array(self):
         a = TVector2Array(numpy.zeros(10), numpy.arange(10))
         self.assertEqual(a.tolist(), [TVector2(0, 0), TVector2(0, 1), TVector2(0, 2), TVector2(0, 3), TVector2(0, 4), TVector2(0, 5), TVector2(0, 6), TVector2(0, 7), TVector2(0, 8), TVector2(0, 9)])
         self.assertEqual(a[5], TVector2(0, 5))
