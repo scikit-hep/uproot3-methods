@@ -56,6 +56,13 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
         if method != "__call__":
             return NotImplemented
 
+        inputs = list(inputs)
+        for i in range(len(inputs)):
+            if isinstance(inputs[i], awkward.util.numpy.ndarray) and inputs[i].dtype == awkward.util.numpy.dtype(object) and len(inputs[i]) > 0:
+                idarray = awkward.util.numpy.frombuffer(inputs[i], dtype=awkward.util.numpy.uintp)
+                if (idarray == idarray[0]).all():
+                    inputs[i] = inputs[i][0]
+
         if ufunc is awkward.util.numpy.add or ufunc is awkward.util.numpy.subtract:
             if not all(isinstance(x, (ArrayMethods, Methods)) for x in inputs):
                 raise TypeError("(arrays of) TVector2 can only be added to/subtracted from other (arrays of) TVector2")

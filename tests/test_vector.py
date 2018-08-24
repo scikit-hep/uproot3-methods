@@ -32,8 +32,9 @@ import unittest
 
 import numpy
 
+import awkward
+import uproot_methods
 from uproot_methods import *
-from awkward import *
 
 class Test(unittest.TestCase):
     def runTest(self):
@@ -70,3 +71,12 @@ class Test(unittest.TestCase):
         self.assertEqual((a + TVector2(1000, 2000) == TVector2Array(numpy.full(10, 1000), numpy.arange(2000, 2010))).tolist(), [True, True, True, True, True, True, True, True, True, True])
         self.assertEqual((a**2).tolist(), [0.0, 1.0, 4.0, 9.0, 16.0, 25.0, 36.0, 49.0, 64.0, 81.0])
         self.assertEqual((a**3).tolist(), [0.0, 1.0, 8.0, 27.0, 64.0, 125.0, 216.0, 343.0, 512.0, 729.0])
+
+    def test_vector2_jagged(self):
+        TVector2Jagged = type("TVector2Jagged", (awkward.JaggedArray, uproot_methods.classes.TVector2.ArrayMethods), {})
+        a = TVector2Jagged.fromoffsets([0, 3, 3, 5, 10], TVector2Array(numpy.zeros(10), numpy.arange(10)))
+        print(a)
+        print(a.x)
+        print(a.y)
+        print(a + TVector2(1000, 2000))
+        # print(a + TVector2Array(numpy.full(4, 1000), numpy.arange(2000, 2400, 100)))
