@@ -103,7 +103,7 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
             return TVector2(operator(scalar, self.x), operator(scalar, self.y))
         else:
             return TVector2(operator(self.x, scalar), operator(self.y, scalar))
-
+        
     def _vector(self, operator, vector, reverse=False):
         if not isinstance(vector, Methods):
             raise TypeError("cannot {0} a TVector2 with a {1}".format(operator.__name__, type(vector).__name__))

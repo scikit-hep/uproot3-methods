@@ -55,6 +55,11 @@ class Test(unittest.TestCase):
         self.assertEqual(-a, TVector2(-4.4, -5.5))
         self.assertEqual(+a, TVector2(4.4, 5.5))
 
+        a += TVector2(100, 200)
+        self.assertEqual(a, TVector2(104.4, 205.5))
+        a *= 10
+        self.assertEqual(a, TVector2(1044, 2055))
+
     def test_vector2_array(self):
         a = TVector2Array(numpy.zeros(10), numpy.arange(10))
         self.assertEqual(a.tolist(), [TVector2(0, 0), TVector2(0, 1), TVector2(0, 2), TVector2(0, 3), TVector2(0, 4), TVector2(0, 5), TVector2(0, 6), TVector2(0, 7), TVector2(0, 8), TVector2(0, 9)])
