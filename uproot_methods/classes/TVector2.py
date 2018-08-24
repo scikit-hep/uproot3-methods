@@ -47,51 +47,9 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
     def x(self):
         return self["fX"]
 
-    @x.setter
-    def x(self, value):
-        self["fX"] = value
-
     @property
     def y(self):
         return self["fY"]
-
-    @y.setter
-    def y(self, value):
-        self["fY"] = value
-
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        if method != "__call__":
-            raise NotImplemented
-
-        inputsx = []
-        inputsy = []
-        for obj in inputs:
-            if isinstance(obj, ArrayMethods):
-                inputsx.append(obj.x)
-                inputsy.append(obj.y)
-            else:
-                inputsx.append(obj)
-                inputsy.append(obj)
-
-        resultx = getattr(ufunc, method)(*inputsx, **kwargs)
-        resulty = getattr(ufunc, method)(*inputsy, **kwargs)
-
-        if isinstance(resultx, tuple) and isinstance(resulty, tuple):
-            out = []
-            for x, y in zip(resultx, resulty):
-                out.append(self.empty_like())
-                out[-1]["fX"] = x
-                out[-1]["fY"] = y
-            return tuple(out)
-
-        elif method == "at":
-            return None
-
-        else:
-            out = self.empty_like()
-            out["fX"] = resultx
-            out["fY"] = resulty
-            return out
 
 class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.Methods):
     _arraymethods = ArrayMethods
@@ -100,17 +58,9 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
     def x(self):
         return self._fX
 
-    @x.setter
-    def x(self, value):
-        self._fX = value
-
     @property
     def y(self):
         return self._fY
-
-    @y.setter
-    def y(self, value):
-        self._fY = value
 
     def __repr__(self):
         return "TVector2({0:.4g}, {1:.4g})".format(self.x, self.y)
@@ -118,9 +68,13 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
     def __str__(self):
         return repr(self)
 
+    def __eq__(self, other):
+        return isinstance(other, Methods) and self.x == other.x and self.y == other.y
+
 class TVector2Array(ArrayMethods, awkward.ObjectArray):
     def __init__(self, x, y):
-        super(TVector2Array, self).__init__(awkward.Table(min(len(x), len(y))), lambda row: TVector2(row["fX"], row["fY"]))
+        super(TVector2Array, self).__init__(awkward.Table(), lambda row: TVector2(row["fX"], row["fY"]))
+        self.content.rowname = "TVector2"
         self["fX"] = x
         self["fY"] = y
 
@@ -139,6 +93,22 @@ class TVector2Array(ArrayMethods, awkward.ObjectArray):
         return cls(rho * awkward.util.numpy.cos(phi),
                    rho * awkward.util.numpy.sin(phi))
 
+    @property
+    def x(self):
+        return self["fX"]
+
+    @x.setter
+    def x(self, value):
+        self["fX"] = value
+
+    @property
+    def y(self):
+        return self["fY"]
+
+    @y.setter
+    def y(self, value):
+        self["fY"] = value
+
 class TVector2(Methods):
     def __init__(self, x, y):
         self._fX = x
@@ -152,3 +122,19 @@ class TVector2(Methods):
     def from_circular(cls, rho, phi):
         return cls(rho * math.cos(phi),
                    rho * math.sin(phi))
+
+    @property
+    def x(self):
+        return self._fX
+
+    @x.setter
+    def x(self, value):
+        self._fX = value
+
+    @property
+    def y(self):
+        return self._fY
+
+    @y.setter
+    def y(self, value):
+        self._fY = value
