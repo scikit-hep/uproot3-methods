@@ -75,8 +75,8 @@ class Test(unittest.TestCase):
     def test_vector2_jagged(self):
         TVector2Jagged = type("TVector2Jagged", (awkward.JaggedArray, uproot_methods.classes.TVector2.ArrayMethods), {})
         a = TVector2Jagged.fromoffsets([0, 3, 3, 5, 10], TVector2Array(numpy.zeros(10), numpy.arange(10)))
-        print(a)
-        print(a.x)
-        print(a.y)
-        print(a + TVector2(1000, 2000))
-        # print(a + TVector2Array(numpy.full(4, 1000), numpy.arange(2000, 2400, 100)))
+        self.assertEqual(a.tolist(), [[TVector2(0, 0), TVector2(0, 1), TVector2(0, 2)], [], [TVector2(0, 3), TVector2(0, 4)], [TVector2(0, 5), TVector2(0, 6), TVector2(0, 7), TVector2(0, 8), TVector2(0, 9)]])
+        self.assertEqual(a.x.tolist(), [[0.0, 0.0, 0.0], [], [0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]])
+        self.assertEqual(a.y.tolist(), [[0, 1, 2], [], [3, 4], [5, 6, 7, 8, 9]])
+        self.assertEqual((a + TVector2(1000, 2000)).tolist(), [[TVector2(1000, 2000), TVector2(1000, 2001), TVector2(1000, 2002)], [], [TVector2(1000, 2003), TVector2(1000, 2004)], [TVector2(1000, 2005), TVector2(1000, 2006), TVector2(1000, 2007), TVector2(1000, 2008), TVector2(1000, 2009)]])
+        self.assertEqual((a + TVector2Array(numpy.full(4, 1000), numpy.arange(1000, 5000, 1000))).tolist(), [[TVector2(1000, 1000), TVector2(1000, 1001), TVector2(1000, 1002)], [], [TVector2(1000, 3003), TVector2(1000, 3004)], [TVector2(1000, 4005), TVector2(1000, 4006), TVector2(1000, 4007), TVector2(1000, 4008), TVector2(1000, 4009)]])
