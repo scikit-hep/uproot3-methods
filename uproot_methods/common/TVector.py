@@ -165,3 +165,101 @@ class Methods(Common):
 
     def __add__(self, other):
         return self._vector(operator.add, other)
+
+    def __radd__(self, other):
+        return self._vector(operator.add, other, True)
+
+    def __sub__(self, other):
+        return self._vector(operator.sub, other)
+
+    def __rsub__(self, other):
+        return self._vector(operator.sub, other, True)
+
+    def __mul__(self, other):
+        return self._scalar(operator.mul, other)
+
+    def __rmul__(self, other):
+        return self._scalar(operator.mul, other, True)
+
+    def __div__(self, other):
+        return self._scalar(operator.div, other)
+
+    def __rdiv__(self, other):
+        return self._scalar(operator.div, other, True)
+
+    def __truediv__(self, other):
+        return self._scalar(operator.truediv, other)
+
+    def __rtruediv__(self, other):
+        return self._scalar(operator.truediv, other, True)
+
+    def __floordiv__(self, other):
+        return self._scalar(operator.floordiv, other)
+
+    def __rfloordiv__(self, other):
+        return self._scalar(operator.floordiv, other, True)
+
+    def __mod__(self, other):
+        return self._scalar(operator.mod, other)
+
+    def __rmod__(self, other):
+        return self._scalar(operator.mod, other, True)
+
+    def __divmod__(self, other):
+        return self._scalar(operator.divmod, other)
+
+    def __rdivmod__(self, other):
+        return self._scalar(operator.divmod, other, True)
+
+    def __pow__(self, other):
+        if isinstance(other, (numbers.Number, awkward.util.numpy.number)):
+            if other == 2:
+                return self.mag2()
+            else:
+                return self.mag2()**(0.5*other)
+        else:
+            self._scalar(operator.pow, other)
+
+    # no __rpow__
+
+    def __lshift__(self, other):
+        return self._scalar(operator.lshift, other)
+
+    def __rlshift__(self, other):
+        return self._scalar(operator.lshift, other, True)
+
+    def __rshift__(self, other):
+        return self._scalar(operator.rshift, other)
+
+    def __rrshift__(self, other):
+        return self._scalar(operator.rshift, other, True)
+
+    def __and__(self, other):
+        return self._scalar(operator.and_, other)
+
+    def __rand__(self, other):
+        return self._scalar(operator.and_, other, True)
+
+    def __or__(self, other):
+        return self._scalar(operator.or_, other)
+
+    def __ror__(self, other):
+        return self._scalar(operator.or_, other, True)
+
+    def __xor__(self, other):
+        return self._scalar(operator.xor, other)
+
+    def __rxor__(self, other):
+        return self._scalar(operator.xor, other, True)
+
+    def __neg__(self):
+        return self._unary(operator.neg)
+
+    def __pos__(self):
+        return self._unary(operator.pos)
+
+    def __abs__(self):
+        return self.mag()
+
+    def __invert__(self):
+        return self._unary(operator.invert)

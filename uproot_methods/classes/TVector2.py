@@ -29,6 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import math
+import numbers
 
 import awkward
 import awkward.util
@@ -63,6 +64,12 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
             out["fY"] = getattr(ufunc, method)(*[x.y for x in inputs], **kwargs)
             return out
 
+        elif ufunc is awkward.util.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, awkward.util.numpy.number)):
+            if inputs[1] == 2:
+                return self.mag2()
+            else:
+                return self.mag2()**(0.5*inputs[1])
+
         elif ufunc is awkward.util.numpy.absolute:
             return self.mag()
 
@@ -81,7 +88,7 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
         return self._fY
 
     def __repr__(self):
-        return "TVector2({0:.4g}, {1:.4g})".format(self.x, self.y)
+        return "TVector2({0:.5g}, {1:.5g})".format(self.x, self.y)
 
     def __str__(self):
         return repr(self)
@@ -89,13 +96,24 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
     def __eq__(self, other):
         return isinstance(other, Methods) and self.x == other.x and self.y == other.y
 
-    def _scalar(self, operator, scalar):
-        return TVector2(operator(self.x, scalar), operator(self.y, scalar))
+    def _scalar(self, operator, scalar, reverse=False):
+        if not isinstance(scalar, (numbers.Number, awkward.util.numpy.number)):
+            raise TypeError("cannot {0} a TVector2 with a {1}".format(operator.__name__, type(scalar).__name__))
+        if reverse:
+            return TVector2(operator(scalar, self.x), operator(scalar, self.y))
+        else:
+            return TVector2(operator(self.x, scalar), operator(self.y, scalar))
 
-    def _vector(self, operator, vector):
+    def _vector(self, operator, vector, reverse=False):
         if not isinstance(vector, Methods):
             raise TypeError("cannot {0} a TVector2 with a {1}".format(operator.__name__, type(vector).__name__))
-        return TVector2(operator(self.x, vector.x), operator(self.y, vector.y))
+        if reverse:
+            return TVector2(operator(vector.x, self.x), operator(vector.y, self.y))
+        else:
+            return TVector2(operator(self.x, vector.x), operator(self.y, vector.y))
+
+    def _unary(self, operator):
+        return TVector2(operator(self.x), operator(self.y))
 
 class TVector2Array(ArrayMethods):
     def __init__(self, x, y):
