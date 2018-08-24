@@ -42,7 +42,7 @@ class Common(object):
         out += self.y * other.y
         return out
 
-class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.ArrayMethods):
+class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.ArrayMethods, awkward.ObjectArray):
     @property
     def x(self):
         return self["fX"]
@@ -50,6 +50,24 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
     @property
     def y(self):
         return self["fY"]
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if method != "__call__":
+            return NotImplemented
+
+        if ufunc is awkward.util.numpy.add or ufunc is awkward.util.numpy.subtract:
+            if not all(isinstance(x, (ArrayMethods, Methods)) for x in inputs):
+                raise TypeError("(arrays of) TVector2 can only be added to/subtracted from other (arrays of) TVector2")
+            out = self.empty_like()
+            out["fX"] = getattr(ufunc, method)(*[x.x for x in inputs], **kwargs)
+            out["fY"] = getattr(ufunc, method)(*[x.y for x in inputs], **kwargs)
+            return out
+
+        elif ufunc is awkward.util.numpy.absolute:
+            return self.mag()
+
+        else:
+            return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
 
 class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.Methods):
     _arraymethods = ArrayMethods
@@ -71,7 +89,15 @@ class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVe
     def __eq__(self, other):
         return isinstance(other, Methods) and self.x == other.x and self.y == other.y
 
-class TVector2Array(ArrayMethods, awkward.ObjectArray):
+    def _scalar(self, operator, scalar):
+        return TVector2(operator(self.x, scalar), operator(self.y, scalar))
+
+    def _vector(self, operator, vector):
+        if not isinstance(vector, Methods):
+            raise TypeError("cannot {0} a TVector2 with a {1}".format(operator.__name__, type(vector).__name__))
+        return TVector2(operator(self.x, vector.x), operator(self.y, vector.y))
+
+class TVector2Array(ArrayMethods):
     def __init__(self, x, y):
         super(TVector2Array, self).__init__(awkward.Table(), lambda row: TVector2(row["fX"], row["fY"]))
         self.content.rowname = "TVector2"

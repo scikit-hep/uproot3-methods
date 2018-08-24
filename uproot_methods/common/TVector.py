@@ -29,6 +29,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import math
+import numbers
+import operator
 
 import awkward.util
 
@@ -55,7 +57,19 @@ class Common(object):
 
     def iscollinear(self, other, tolerance=1e-10):
         return 1 - awkward.util.numpy.absolute(self.cosdelta(other)) < tolerance
-    
+
+    def __lt__(self, other):
+        raise TypeError("spatial vectors have no natural ordering")
+
+    def __gt__(self, other):
+        raise TypeError("spatial vectors have no natural ordering")
+
+    def __le__(self, other):
+        raise TypeError("spatial vectors have no natural ordering")
+
+    def __ge__(self, other):
+        raise TypeError("spatial vectors have no natural ordering")
+
 class ArrayMethods(Common):
     def unit(self, inplace=False):
         if inplace:
@@ -116,7 +130,7 @@ class ArrayMethods(Common):
         awkward.util.numpy.bitwise_and(out, tmp.y < tolerance, out=out)
         awkward.util.numpy.bitwise_and(out, tmp.z < tolerance, out=out)
         return out
-        
+
 class Methods(Common):
     def unit(self):
         return self / self.mag()
@@ -148,3 +162,6 @@ class Methods(Common):
     def isperpendicular(self, other, tolerance=1e-10):
         tmp = self.dot(other)
         return abs(tmp.x) < tolerance and abs(tmp.y) < tolerance and abs(tmp.z) < tolerance
+
+    def __add__(self, other):
+        return self._vector(operator.add, other)
