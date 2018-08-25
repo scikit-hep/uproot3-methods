@@ -143,50 +143,25 @@ class Common(object):
 class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray):
     @property
     def vect(self):
-        return self._vect
+        out = self.empty_like(generator=uproot_methods.classes.TVector3.TVector3)
+        out.__class__ = uproot_methods.classes.TVector3.ArrayMethods
+        out["fX"] = self.x
+        out["fY"] = self.y
+        out["fZ"] = self.z
+        return out
 
     @property
     def x(self):
-        return self._vect["fX"]
+        return self["fX"]
 
     @property
     def y(self):
-        return self._vect["fY"]
+        return self["fY"]
 
     @property
     def z(self):
-        return self._vect["fZ"]
+        return self["fZ"]
 
-    def __getitem__(self, where):
-        if awkward.util.isstringslice(where):
-            if where == "fX" or where == "fY" or where == "fZ":
-                return self._vect[where]
-            elif not isinstance(where, awkward.util.string):
-                out = self._vect[[x for x in where if x == "fX" or x == "fY" or x == "fZ"]]
-                for x in where:
-                    if x != "fX" and x != "fY" and x != "fZ":
-                        out[x] = self[x]
-                return out
-
-        return awkward.ObjectArray.__getitem__(self, where)
-
-    def __setitem__(self, where, what):
-        if awkward.util.isstringslice(where):
-            if where == "fX" or where == "fY" or where == "fZ":
-                self._vect[where] = what
-            elif isinstance(where, awkward.util.string):
-                awkward.ObjectArray.__setitem__(self, where, what)
-            else:
-                if len(where) != len(what):
-                    raise ValueError("number of keys ({0}) does not match number of provided arrays ({1})".format(len(where), len(what)))
-                for x, y in zip(where, what):
-                    if x == "fX" or x == "fY" or x == "fZ":
-                        self._vect[x] = y
-                    else:
-                        self[x] = y
-        else:
-            awkward.ObjectArray.__setitem__(self, where, what)
-        
     @property
     def t(self):
         return self["fE"]
@@ -209,7 +184,8 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
         return self / awkward.util.numpy.sqrt(self.mag())
 
     def boost_vector(self):
-        out = self._vect.empty_like()
+        out = self.empty_like(generator=uproot_methods.classes.TVector3.TVector3)
+        out.__class__ = uproot_methods.classes.TVector3.ArrayMethods
         out["fX"] = self.x / self.t
         out["fY"] = self.y / self.t
         out["fZ"] = self.z / self.t
@@ -229,10 +205,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
         bp = self.vect.dot(vect)
         v = self.vect + gamma2*bp*vect + gamma*vect*self.t
         out = self.empty_like()
-        out._vect = self._vect.empty_like()
-        out._vect["fX"] = v.x
-        out._vect["fY"] = v.y
-        out._vect["fZ"] = v.z
+        out["fX"] = v.x
+        out["fY"] = v.y
+        out["fZ"] = v.z
         out["fE"] = gamma*(self.t + bp)
         return out
 
@@ -249,14 +224,18 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
     def rotate_axis(self, axis, angle):
         vect, t = self._rotate_axis(axis, angle)
         out = self.empty_like()
-        out._vect = vect
+        out["fX"] = vect.x
+        out["fY"] = vect.y
+        out["fZ"] = vect.z
         out["fE"] = t
         return out
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         vect, t = self._rotate_euler(phi, theta, psi)
         out = self.empty_like()
-        out._vect = vect
+        out["fX"] = vect.x
+        out["fY"] = vect.y
+        out["fZ"] = vect.z
         out["fE"] = t
         return out
 
@@ -278,10 +257,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
             if not all(isinstance(x, (ArrayMethods, Methods)) for x in inputs):
                 raise TypeError("(arrays of) TLorentzVector can only be added to/subtracted from other (arrays of) TLorentzVector")
             out = self.empty_like()
-            out._vect = self._vect.empty_like()
-            out._vect["fX"] = getattr(ufunc, method)(*[x.x for x in inputs], **kwargs)
-            out._vect["fY"] = getattr(ufunc, method)(*[x.y for x in inputs], **kwargs)
-            out._vect["fZ"] = getattr(ufunc, method)(*[x.z for x in inputs], **kwargs)
+            out["fX"] = getattr(ufunc, method)(*[x.x for x in inputs], **kwargs)
+            out["fY"] = getattr(ufunc, method)(*[x.y for x in inputs], **kwargs)
+            out["fZ"] = getattr(ufunc, method)(*[x.z for x in inputs], **kwargs)
             out["fE"] = getattr(ufunc, method)(*[x.t for x in inputs], **kwargs)
             return out
 
@@ -509,24 +487,10 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
 
 class TLorentzVectorArray(ArrayMethods):
     def __init__(self, x, y, z, t):
-        self._vect = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
-
-        connectedtable = awkward.Table()
-        connectedtable._content["fX"] = 
-                               
-                               
-                               .update(self._vect._content)
-
-        def tmp(row):
-            print()
-            print(type(row), type(row._table))
-            print(row["fX"])
-
-            return TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"])
-
-        super(TLorentzVectorArray, self).__init__(connectedtable, tmp)
-
-        # super(TLorentzVectorArray, self).__init__(connectedtable, lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
+        super(TLorentzVectorArray, self).__init__(awkward.Table(), lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
+        self["fX"] = x
+        self["fY"] = y
+        self["fZ"] = z
         self["fE"] = t
 
     @classmethod
@@ -545,7 +509,9 @@ class TLorentzVectorArray(ArrayMethods):
     @classmethod
     def from_vect(cls, vect, t):
         out = cls.__new__(cls)
-        out._vect = vect
+        out["fX"] = vect.x
+        out["fY"] = vect.y
+        out["fZ"] = vect.z
         out["fE"] = t
         return out
 
@@ -578,27 +544,27 @@ class TLorentzVectorArray(ArrayMethods):
 
     @property
     def x(self):
-        return self._vect["fX"]
+        return self["fX"]
 
     @x.setter
     def x(self, value):
-        self._vect["fX"] = value
+        self["fX"] = value
 
     @property
     def y(self):
-        return self._vect["fY"]
+        return self["fY"]
 
     @y.setter
     def y(self, value):
-        self._vect["fY"] = value
+        self["fY"] = value
 
     @property
     def z(self):
-        return self._vect["fZ"]
+        return self["fZ"]
 
     @z.setter
     def z(self, value):
-        self._vect["fZ"] = value
+        self["fZ"] = value
 
     @property
     def t(self):
