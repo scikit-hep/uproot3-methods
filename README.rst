@@ -18,9 +18,9 @@ Install uproot-methods like any other Python package:
 
 .. code-block:: bash
 
-    pip install uproot-methods --user
+    pip install uproot-methods
 
-or similar (use ``sudo``, ``virtualenv``, or ``conda`` if you wish).
+or similar (use ``sudo``, ``--user``, ``virtualenv``, or ``conda`` if you wish).
 
 Strict dependencies:
 ====================
