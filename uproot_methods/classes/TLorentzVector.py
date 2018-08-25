@@ -29,6 +29,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import math
+import numbers
+import operator
 
 import awkward
 import awkward.util
@@ -57,6 +59,12 @@ class Common(object):
     def p2(self):
         return self.vect.mag2()
 
+    def perp2(self):
+        return self.vect.rho2()
+
+    def perp(self):
+        return self.vect.rho()
+
     def pt2(self):
         return self.vect.rho2()
 
@@ -65,6 +73,9 @@ class Common(object):
 
     def Et(self):
         return self.energy() * self.pt() / self.p()
+
+    def mag2(self):
+        return self.dot(self)
 
     def mass2(self):
         return self.mag2()
@@ -87,16 +98,17 @@ class Common(object):
     def beta(self):
         return self.p() / self.energy()
 
-    def delta_r2(self):
+    def delta_phi(self, other):
+        return self.vect.delta_phi(other.vect)
+
+    def delta_r2(self, other):
         return (self.eta() - other.eta())**2 + self.delta_phi(other)**2
 
     def _rotate_axis(self, axis, angle):
-        if isinstance(axis, uproot_methods.classes.TVector3.Common):
-            vect = self.vect._rotate_axis(axis, angle)
-            return vect, self.t
-        else:
-            vect = self.vect._rotate_axis(axis.vect, angle)
-            return vect, self.t
+        if not isinstance(axis, uproot_methods.classes.TVector3.Common):
+            raise TypeError("axis must be an (array of) TVector3")
+        vect = self.vect._rotate_axis(axis, angle)
+        return vect, self.t
 
     def _rotate_euler(self, phi, theta, psi):
         return self.vect._rotate_euler(phi, theta, psi), self.t
@@ -115,6 +127,18 @@ class Common(object):
 
     def istimelike(self, tolerance=1e-10):
         return self.mag2() > tolerance
+
+    def __lt__(self, other):
+        raise TypeError("Lorentz vectors have no natural ordering")
+
+    def __gt__(self, other):
+        raise TypeError("Lorentz vectors have no natural ordering")
+
+    def __le__(self, other):
+        raise TypeError("Lorentz vectors have no natural ordering")
+
+    def __ge__(self, other):
+        raise TypeError("Lorentz vectors have no natural ordering")
 
 class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray):
     @property
@@ -151,7 +175,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
             if where == "fX" or where == "fY" or where == "fZ":
                 self._vect[where] = what
             elif isinstance(where, awkward.util.string):
-                self[where] = what
+                awkward.ObjectArray.__setitem__(self, where, what)
             else:
                 if len(where) != len(what):
                     raise ValueError("number of keys ({0}) does not match number of provided arrays ({1})".format(len(where), len(what)))
@@ -167,6 +191,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
     def t(self):
         return self["fE"]
 
+    def mag(self):
+        return awkward.util.numpy.sqrt(self.mag2())
+
     def mt(self):
         mt2 = self.mt2()
         sign = awkward.util.numpy.sign(mt2)
@@ -177,6 +204,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
 
     def rapidity(self):
         return awkward.util.numpy.log((self.t + self.z) / (self.t - self.z)) / 2.0
+
+    def unit(self):
+        return self / awkward.util.numpy.sqrt(self.mag())
 
     def boost_vector(self):
         out = self._vect.empty_like()
@@ -318,6 +348,9 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     def _unary(self, operator):
         return TLorentzVector(operator(self.x), operator(self.y), operator(self.z), operator(self.t))
 
+    def mag(self):
+        return math.sqrt(self.mag2())
+
     def mt(self):
         out = self.mt2()
         if out >= 0:
@@ -330,6 +363,9 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
 
     def rapidity(self):
         return math.log((self.t + self.z) / (self.t - self.z)) / 2.0
+
+    def unit(self):
+        return self / math.sqrt(self.mag())
 
     def boost_vector(self):
         return uproot_methods.classes.TVector3.TVector3(self.x/self.t, self.y/self.t, self.z/self.t)
@@ -370,10 +406,127 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     def islightlike(self, tolerance=1e-10):
         return abs(self.mag2()) < tolerance
 
+    def __add__(self, other):
+        return self._vector(operator.add, other)
+
+    def __radd__(self, other):
+        return self._vector(operator.add, other, True)
+
+    def __sub__(self, other):
+        return self._vector(operator.sub, other)
+
+    def __rsub__(self, other):
+        return self._vector(operator.sub, other, True)
+
+    def __mul__(self, other):
+        return self._scalar(operator.mul, other)
+
+    def __rmul__(self, other):
+        return self._scalar(operator.mul, other, True)
+
+    def __div__(self, other):
+        return self._scalar(operator.div, other)
+
+    def __rdiv__(self, other):
+        return self._scalar(operator.div, other, True)
+
+    def __truediv__(self, other):
+        return self._scalar(operator.truediv, other)
+
+    def __rtruediv__(self, other):
+        return self._scalar(operator.truediv, other, True)
+
+    def __floordiv__(self, other):
+        return self._scalar(operator.floordiv, other)
+
+    def __rfloordiv__(self, other):
+        return self._scalar(operator.floordiv, other, True)
+
+    def __mod__(self, other):
+        return self._scalar(operator.mod, other)
+
+    def __rmod__(self, other):
+        return self._scalar(operator.mod, other, True)
+
+    def __divmod__(self, other):
+        return self._scalar(operator.divmod, other)
+
+    def __rdivmod__(self, other):
+        return self._scalar(operator.divmod, other, True)
+
+    def __pow__(self, other):
+        if isinstance(other, (numbers.Number, awkward.util.numpy.number)):
+            if other == 2:
+                return self.mag2()
+            else:
+                return self.mag2()**(0.5*other)
+        else:
+            self._scalar(operator.pow, other)
+
+    # no __rpow__
+
+    def __lshift__(self, other):
+        return self._scalar(operator.lshift, other)
+
+    def __rlshift__(self, other):
+        return self._scalar(operator.lshift, other, True)
+
+    def __rshift__(self, other):
+        return self._scalar(operator.rshift, other)
+
+    def __rrshift__(self, other):
+        return self._scalar(operator.rshift, other, True)
+
+    def __and__(self, other):
+        return self._scalar(operator.and_, other)
+
+    def __rand__(self, other):
+        return self._scalar(operator.and_, other, True)
+
+    def __or__(self, other):
+        return self._scalar(operator.or_, other)
+
+    def __ror__(self, other):
+        return self._scalar(operator.or_, other, True)
+
+    def __xor__(self, other):
+        return self._scalar(operator.xor, other)
+
+    def __rxor__(self, other):
+        return self._scalar(operator.xor, other, True)
+
+    def __neg__(self):
+        return self._unary(operator.neg)
+
+    def __pos__(self):
+        return self._unary(operator.pos)
+
+    def __abs__(self):
+        return self.mag()
+
+    def __invert__(self):
+        return self._unary(operator.invert)
+
 class TLorentzVectorArray(ArrayMethods):
     def __init__(self, x, y, z, t):
-        super(TLorentzVectorArray, self).__init__(awkward.Table(), lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
         self._vect = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
+
+        connectedtable = awkward.Table()
+        connectedtable._content["fX"] = 
+                               
+                               
+                               .update(self._vect._content)
+
+        def tmp(row):
+            print()
+            print(type(row), type(row._table))
+            print(row["fX"])
+
+            return TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"])
+
+        super(TLorentzVectorArray, self).__init__(connectedtable, tmp)
+
+        # super(TLorentzVectorArray, self).__init__(connectedtable, lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
         self["fE"] = t
 
     @classmethod

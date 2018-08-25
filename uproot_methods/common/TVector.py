@@ -71,11 +71,8 @@ class Common(object):
         raise TypeError("spatial vectors have no natural ordering")
 
 class ArrayMethods(Common):
-    def unit(self, inplace=False):
-        if inplace:
-            self /= self.mag()
-        else:
-            return self / self.mag()
+    def unit(self):
+        return self / self.mag()
 
     def rho(self):
         out = self.rho2()
