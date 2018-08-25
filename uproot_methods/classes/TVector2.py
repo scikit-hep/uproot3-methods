@@ -47,6 +47,9 @@ class Common(object):
     # def _rotate(self, angle)
 
 class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods, awkward.ObjectArray):
+    def __init__(self, table):
+        awkward.ObjectArray.__init__(self, table, lambda row: TVector2(row["fX"], row["fY"]))
+
     @property
     def x(self):
         return self["fX"]
@@ -127,7 +130,7 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
 
 class TVector2Array(ArrayMethods):
     def __init__(self, x, y):
-        super(TVector2Array, self).__init__(awkward.Table(), lambda row: TVector2(row["fX"], row["fY"]))
+        super(TVector2Array, self).__init__(awkward.Table())
         self.content.rowname = "TVector2"
         self["fX"] = x
         self["fY"] = y

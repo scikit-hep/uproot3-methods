@@ -141,6 +141,9 @@ class Common(object):
         raise TypeError("Lorentz vectors have no natural ordering")
 
 class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray):
+    def __init__(self, table):
+        awkward.ObjectArray.__init__(self, table, lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
+
     @property
     def vect(self):
         out = self.empty_like(generator=uproot_methods.classes.TVector3.TVector3)
@@ -487,7 +490,7 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
 
 class TLorentzVectorArray(ArrayMethods):
     def __init__(self, x, y, z, t):
-        super(TLorentzVectorArray, self).__init__(awkward.Table(), lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
+        super(TLorentzVectorArray, self).__init__(awkward.Table())
         self["fX"] = x
         self["fY"] = y
         self["fZ"] = z
