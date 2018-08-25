@@ -43,7 +43,10 @@ class Common(object):
         out += self.y * other.y
         return out
 
-class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.ArrayMethods, awkward.ObjectArray):
+    # TODO:
+    # def _rotate(self, angle)
+
+class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods, awkward.ObjectArray):
     @property
     def x(self):
         return self["fX"]
@@ -83,7 +86,7 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
         else:
             return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
 
-class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.Methods):
+class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
     @property

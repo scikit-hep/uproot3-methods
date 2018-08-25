@@ -103,30 +103,18 @@ class Common(object):
     def rotatez(self, angle):
         return self.rotate_axis(Methods(0.0, 0.0, 1.0), angle)
 
-class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.ArrayMethods):
+class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods, awkward.ObjectArray):
     @property
     def x(self):
         return self["fX"]
-
-    @x.setter
-    def x(self, value):
-        self["fX"] = value
 
     @property
     def y(self):
         return self["fY"]
 
-    @y.setter
-    def y(self, value):
-        self["fY"] = value
-
     @property
     def z(self):
         return self["fZ"]
-
-    @z.setter
-    def z(self, value):
-        self["fZ"] = value
 
     def cross(self, other):
         x, y, z = self._cross(other)
@@ -159,98 +147,94 @@ class ArrayMethods(uproot_methods.base.ROOTMethods, Common, uproot_methods.commo
         if method != "__call__":
             raise NotImplemented
 
-        inputsx = []
-        inputsy = []
-        inputsz = []
-        for obj in inputs:
-            if isinstance(obj, ArrayMethods):
-                inputsx.append(obj.x)
-                inputsy.append(obj.y)
-                inputsz.append(obj.z)
-            else:
-                inputsx.append(obj)
-                inputsy.append(obj)
-                inputsz.append(obj)
+        inputs = list(inputs)
+        for i in range(len(inputs)):
+            if isinstance(inputs[i], awkward.util.numpy.ndarray) and inputs[i].dtype == awkward.util.numpy.dtype(object) and len(inputs[i]) > 0:
+                idarray = awkward.util.numpy.frombuffer(inputs[i], dtype=awkward.util.numpy.uintp)
+                if (idarray == idarray[0]).all():
+                    inputs[i] = inputs[i][0]
 
-        resultx = getattr(ufunc, method)(*inputsx, **kwargs)
-        resulty = getattr(ufunc, method)(*inputsy, **kwargs)
-        resultz = getattr(ufunc, method)(*inputsz, **kwargs)
-
-        if isinstance(resultx, tuple) and isinstance(resulty, tuple) and isinstance(resultz, tuple):
-            out = []
-            for x, y, z in zip(resultx, resulty, resultz):
-                out.append(self.empty_like())
-                out[-1]["fX"] = x
-                out[-1]["fY"] = y
-                out[-1]["fZ"] = z
-            return tuple(out)
-
-        elif method == "at":
-            return None
-
-        else:
+        if ufunc is awkward.util.numpy.add or ufunc is awkward.util.numpy.subtract:
+            if not all(isinstance(x, (ArrayMethods, Methods)) for x in inputs):
+                raise TypeError("(arrays of) TVector3 can only be added to/subtracted from other (arrays of) TVector3")
             out = self.empty_like()
-            out["fX"] = resultx
-            out["fY"] = resulty
-            out["fZ"] = resultz
+            out["fX"] = getattr(ufunc, method)(*[x.x for x in inputs], **kwargs)
+            out["fY"] = getattr(ufunc, method)(*[x.y for x in inputs], **kwargs)
+            out["fZ"] = getattr(ufunc, method)(*[x.z for x in inputs], **kwargs)
             return out
 
-class Methods(uproot_methods.base.ROOTMethods, Common, uproot_methods.common.TVector.Methods):
+        elif ufunc is awkward.util.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, awkward.util.numpy.number)):
+            if inputs[1] == 2:
+                return self.mag2()
+            else:
+                return self.mag2()**(0.5*inputs[1])
+
+        elif ufunc is awkward.util.numpy.absolute:
+            return self.mag()
+
+        else:
+            return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
+
+class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
     @property
     def x(self):
         return self._fX
 
-    @x.setter
-    def x(self, value):
-        self._fX = value
-
     @property
     def y(self):
         return self._fY
-
-    @y.setter
-    def y(self, value):
-        self._fY = value
 
     @property
     def z(self):
         return self._fZ
 
-    @z.setter
-    def z(self, value):
-        self._fZ = value
-
     def __repr__(self):
-        return "TVector3({0:.4g}, {1:.4g}, {2:.4g})".format(self.x, self.y, self.z)
+        return "TVector3({0:.5g}, {1:.5g}, {2:.5g})".format(self.x, self.y, self.z)
 
     def __str__(self):
         return repr(self)
 
+    def __eq__(self, other):
+        return isinstance(other, Methods) and self.x == other.x and self.y == other.y and self.z == other.z
+
+    def _scalar(self, operator, scalar, reverse=False):
+        if not isinstance(scalar, (numbers, Number, awkward.util.numpy.number)):
+            raise TypeError("cannot {0} a TVector3 with a {1}".format(operator.__name__, type(scalar).__name__))
+        if reverse:
+            return TVector3(operator(scalar, self.x), operator(scalar, self.y), operator(scalar, self.z))
+        else:
+            return TVector3(operator(self.x, scalar), operator(self.y, scalar), operator(self.z, scalar))
+
+    def _vector(self, operator, vector, reverse=False):
+        if not isinstance(vector, Methods):
+            raise TypeError("cannot {0} a TVector3 with a {1}".format(operator.__name__, type(vector).__name__))
+        if reverse:
+            return TVector3(operator(vector.x, self.x), operator(vector.y, self.y), operator(vector.z, self.z))
+        else:
+            return TVector3(operator(self.x, vector.x), operator(self.y, vector.y), operator(self.z, vector.z))
+
+    def _unary(self, operator):
+        return TVector3(operator(self.x), operator(self.y), operator(self.z))
+
     def cross(self, other):
         x, y, z = self._cross(other)
-        return self.__class__(x, y, z)
+        return self.TVector3(x, y, z)
 
     def theta(self):
         return math.atan2(self.rho(), self.z)
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)
-        return self.__class__(x, y, z)
+        return self.TVector3(x, y, z)
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
-        return self.__class__(x, y, z)
+        return self.TVector3(x, y, z)
 
-    def __repr__(self):
-        return "TVector3({0:.4g}, {1:.4g}, {2:.4g})".format(self.x, self.y, self.z)
-
-    def __str__(self):
-        return repr(self)
-
-class TVector3Array(ArrayMethods, awkward.ObjectArray):
+class TVector3Array(ArrayMethods):
     def __init__(self, x, y, z):
-        super(TVector3Array, self).__init__(awkward.Table(min(len(x), len(y), len(z))), lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
+        super(TVector3Array, self).__init__(awkward.Table(), lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
         self["fX"] = x
         self["fY"] = y
         self["fZ"] = z
@@ -279,6 +263,30 @@ class TVector3Array(ArrayMethods, awkward.ObjectArray):
                    rho * awkward.util.numpy.sin(phi),
                    z)
 
+    @property
+    def x(self):
+        return self["fX"]
+
+    @x.setter
+    def x(self, value):
+        self["fX"] = value
+
+    @property
+    def y(self):
+        return self["fY"]
+
+    @y.setter
+    def y(self, value):
+        self["fY"] = value
+
+    @property
+    def z(self):
+        return self["fZ"]
+
+    @z.setter
+    def z(self, value):
+        self["fZ"] = value
+
 class TVector3(Methods):
     def __init__(self, x, y, z):
         self._fX = x
@@ -300,3 +308,27 @@ class TVector3(Methods):
         return cls(rho * math.cos(phi),
                    rho * math.sin(phi),
                    z)
+
+    @property
+    def x(self):
+        return self._fX
+
+    @x.setter
+    def x(self, value):
+        self._fX = value
+
+    @property
+    def y(self):
+        return self._fY
+
+    @y.setter
+    def y(self, value):
+        self._fY = value
+
+    @property
+    def z(self):
+        return self._fZ
+
+    @z.setter
+    def z(self, value):
+        self._fZ = value
