@@ -133,7 +133,7 @@ class Test(unittest.TestCase):
         self.assertEqual(a / 1000, TLorentzVector(0.0044, 0.0055, 0, 0))
         self.assertEqual(1000 / (a + TLorentzVector(0, 0, 1, 1)), TLorentzVector(227.27272727272725, 181.8181818181818, 1000, 1000))
         self.assertEqual(a**2, -49.61)
-        self.assertEqual(a**1, 4.312861081053236e-16+7.043436661176133j)
+        self.assertEqual((a + TLorentzVector(0, 0, 0, 10))**1, 7.098591409568521)
         self.assertEqual(abs(a + TLorentzVector(0, 0, 0, 10)), 7.098591409568521)
         self.assertEqual(-a, TLorentzVector(-4.4, -5.5, 0, 0))
         self.assertEqual(+a, TLorentzVector(4.4, 5.5, 0, 0))
