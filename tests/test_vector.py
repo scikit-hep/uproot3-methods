@@ -152,3 +152,12 @@ class Test(unittest.TestCase):
         self.assertEqual((a + TLorentzVector(1000, 2000, 0, 0))[5], TLorentzVector(1000, 2005, 0, 0))
         self.assertEqual((a + TLorentzVector(1000, 2000, 0, 0) == TLorentzVectorArray(numpy.full(10, 1000), numpy.arange(2000, 2010), numpy.zeros(10), numpy.zeros(10))).tolist(), [True, True, True, True, True, True, True, True, True, True])
         self.assertEqual((a**2).tolist(), [0.0, -1.0, -4.0, -9.0, -16.0, -25.0, -36.0, -49.0, -64.0, -81.0])
+
+    def test_lorentzvector_jagged(self):
+        TLorentzVectorJagged = type("TLorentzVectorJagged", (awkward.JaggedArray, uproot_methods.classes.TLorentzVector.ArrayMethods), {})
+        a = TLorentzVectorJagged.fromoffsets([0, 3, 3, 5, 10], TLorentzVectorArray(numpy.zeros(10), numpy.arange(10), numpy.zeros(10), numpy.zeros(10)))
+        self.assertEqual(a.tolist(), [[TLorentzVector(0, 0, 0, 0), TLorentzVector(0, 1, 0, 0), TLorentzVector(0, 2, 0, 0)], [], [TLorentzVector(0, 3, 0, 0), TLorentzVector(0, 4, 0, 0)], [TLorentzVector(0, 5, 0, 0), TLorentzVector(0, 6, 0, 0), TLorentzVector(0, 7, 0, 0), TLorentzVector(0, 8, 0, 0), TLorentzVector(0, 9, 0, 0)]])
+        self.assertEqual(a.x.tolist(), [[0.0, 0.0, 0.0], [], [0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]])
+        self.assertEqual(a.y.tolist(), [[0, 1, 2], [], [3, 4], [5, 6, 7, 8, 9]])
+        self.assertEqual((a + TLorentzVector(1000, 2000, 0, 0)).tolist(), [[TLorentzVector(1000, 2000, 0, 0), TLorentzVector(1000, 2001, 0, 0), TLorentzVector(1000, 2002, 0, 0)], [], [TLorentzVector(1000, 2003, 0, 0), TLorentzVector(1000, 2004, 0, 0)], [TLorentzVector(1000, 2005, 0, 0), TLorentzVector(1000, 2006, 0, 0), TLorentzVector(1000, 2007, 0, 0), TLorentzVector(1000, 2008, 0, 0), TLorentzVector(1000, 2009, 0, 0)]])
+        self.assertEqual((a + TLorentzVectorArray(numpy.full(4, 1000), numpy.arange(1000, 5000, 1000), numpy.zeros(4), numpy.zeros(4))).tolist(), [[TLorentzVector(1000, 1000, 0, 0), TLorentzVector(1000, 1001, 0, 0), TLorentzVector(1000, 1002, 0, 0)], [], [TLorentzVector(1000, 3003, 0, 0), TLorentzVector(1000, 3004, 0, 0)], [TLorentzVector(1000, 4005, 0, 0), TLorentzVector(1000, 4006, 0, 0), TLorentzVector(1000, 4007, 0, 0), TLorentzVector(1000, 4008, 0, 0), TLorentzVector(1000, 4009, 0, 0)]])
