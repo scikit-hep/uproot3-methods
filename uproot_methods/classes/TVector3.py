@@ -29,6 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import math
+import numbers
 
 import awkward
 import awkward.util
@@ -200,7 +201,7 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         return isinstance(other, Methods) and self.x == other.x and self.y == other.y and self.z == other.z
 
     def _scalar(self, operator, scalar, reverse=False):
-        if not isinstance(scalar, (numbers, Number, awkward.util.numpy.number)):
+        if not isinstance(scalar, (numbers.Number, awkward.util.numpy.number)):
             raise TypeError("cannot {0} a TVector3 with a {1}".format(operator.__name__, type(scalar).__name__))
         if reverse:
             return TVector3(operator(scalar, self.x), operator(scalar, self.y), operator(scalar, self.z))
