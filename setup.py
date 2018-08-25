@@ -69,7 +69,7 @@ setup(name = "uproot-methods",
       download_url = "https://github.com/scikit-hep/uproot-methods/releases",
       license = "BSD 3-clause",
       test_suite = "tests",
-      install_requires = ["numpy", "awkward"],
+      install_requires = ["numpy>=1.13.1", "awkward"],
       tests_require = [],
       classifiers = [
           "Development Status :: 4 - Beta",

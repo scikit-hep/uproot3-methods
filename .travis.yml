@@ -55,4 +55,3 @@ deploy:
     tags: true
     branch: master
     condition: '$TRAVIS_PYTHON_VERSION = "3.6" && $NUMPY = "numpy>=1.15"'
-
