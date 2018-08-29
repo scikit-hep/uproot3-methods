@@ -36,6 +36,7 @@ import awkward
 import awkward.util
 
 import uproot_methods.base
+import uproot_methods.common.TVector
 import uproot_methods.classes.TVector3
 
 class Common(object):
@@ -99,7 +100,7 @@ class Common(object):
         return self.p() / self.energy()
 
     def delta_phi(self, other):
-        return self.vect.delta_phi(other.vect)
+        return (self.phi() - other.phi() + math.pi) % (2*math.pi) - math.pi
 
     def delta_r2(self, other):
         return (self.eta() - other.eta())**2 + self.delta_phi(other)**2
