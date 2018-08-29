@@ -129,7 +129,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
         return out
 
     def theta(self):
-        return self.like(awkward.util.numpy.arctan2(self.rho(), self.z))
+        return awkward.util.numpy.arctan2(self.rho(), self.z)
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)

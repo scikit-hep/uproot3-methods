@@ -147,8 +147,11 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
 
     @property
     def vect(self):
-        out = self.empty_like(generator=uproot_methods.classes.TVector3.TVector3)
-        out.__class__ = uproot_methods.classes.TVector3.ArrayMethods
+        out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
+        if isinstance(self, awkward.JaggedArray):
+            out.__class__ = type("JaggedArray", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+        else:
+            out.__class__ = uproot_methods.classes.TVector3.ArrayMethods
         out["fX"] = self.x
         out["fY"] = self.y
         out["fZ"] = self.z
@@ -188,8 +191,11 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods, awkward.ObjectArray)
         return self / awkward.util.numpy.sqrt(self.mag())
 
     def boost_vector(self):
-        out = self.empty_like(generator=uproot_methods.classes.TVector3.TVector3)
-        out.__class__ = uproot_methods.classes.TVector3.ArrayMethods
+        out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
+        if isinstance(self, awkward.JaggedArray):
+            out.__class__ = type("JaggedArray", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+        else:
+            out.__class__ = uproot_methods.classes.TVector3.ArrayMethods
         out["fX"] = self.x / self.t
         out["fY"] = self.y / self.t
         out["fZ"] = self.z / self.t
@@ -303,7 +309,7 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
         return self._fE
 
     def __repr__(self):
-        return "TLorentzVector({0:.4g}, {1:.4g}, {2:.4g}, {3:.4g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
+        return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
 
     def __str__(self):
         return repr(self)
