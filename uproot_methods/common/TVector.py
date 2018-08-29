@@ -42,8 +42,8 @@ class Common(object):
         return awkward.util.numpy.sqrt(self.mag2())
 
     def rho2(self):
-        out = self.x * self.x
-        out += self.y * self.y
+        out = self.x*self.x
+        out = out + self.y*self.y
         return out
 
     def delta_phi(self, other):
@@ -76,14 +76,13 @@ class ArrayMethods(Common):
 
     def rho(self):
         out = self.rho2()
-        return awkward.util.numpy.sqrt(out, out=out)
+        return awkward.util.numpy.sqrt(out)
 
     def phi(self):
         return awkward.util.numpy.arctan2(self.y, self.x)
 
     def cosdelta(self, other):
-        denom = self.mag2()
-        denom *= other.mag2()
+        denom = self.mag2() * other.mag2()
         mask = (denom > 0)
         denom = denom[mask]
         denom[:] = awkward.util.numpy.sqrt(denom)
@@ -91,41 +90,41 @@ class ArrayMethods(Common):
         out = self.dot(other)
         out[mask] /= denom
 
-        awkward.util.numpy.logical_not(mask, out=mask)
+        mask = awkward.util.numpy.logical_not(mask)
         out[mask] = 1
 
-        return awkward.util.numpy.clip(out, -1, 1, out=out)
+        return awkward.util.numpy.clip(out, -1, 1)
 
     def angle(self, other, normal=None, degrees=False):
         out = awkward.util.numpy.arccos(self.cosdelta(other))
         if normal is not None:
             a = self.unit()
             b = other.unit()
-            out *= awkward.util.numpy.sign(normal.dot(a.cross(b)))
+            out = out * awkward.util.numpy.sign(normal.dot(a.cross(b)))
         if degrees:
-            awkward.util.numpy.multiply(out, 180.0/awkward.util.numpy.pi, out=out)
+            out = awkward.util.numpy.multiply(out, 180.0/awkward.util.numpy.pi)
         return out
 
     def isopposite(self, other, tolerance=1e-10):
         tmp = self + other
-        awkward.util.numpy.absolute(tmp.x, out=tmp.x)
-        awkward.util.numpy.absolute(tmp.y, out=tmp.y)
-        awkward.util.numpy.absolute(tmp.z, out=tmp.z)
+        tmp.x = awkward.util.numpy.absolute(tmp.x)
+        tmp.y = awkward.util.numpy.absolute(tmp.y)
+        tmp.z = awkward.util.numpy.absolute(tmp.z)
 
         out = (tmp.x < tolerance)
-        awkward.util.numpy.bitwise_and(out, tmp.y < tolerance, out=out)
-        awkward.util.numpy.bitwise_and(out, tmp.z < tolerance, out=out)
+        out = awkward.util.numpy.bitwise_and(out, tmp.y < tolerance)
+        out = awkward.util.numpy.bitwise_and(out, tmp.z < tolerance)
         return out
 
     def isperpendicular(self, other, tolerance=1e-10):
         tmp = self.dot(other)
-        awkward.util.numpy.absolute(tmp.x, out=tmp.x)
-        awkward.util.numpy.absolute(tmp.y, out=tmp.y)
-        awkward.util.numpy.absolute(tmp.z, out=tmp.z)
+        tmp.x = awkward.util.numpy.absolute(tmp.x)
+        tmp.y = awkward.util.numpy.absolute(tmp.y)
+        tmp.z = awkward.util.numpy.absolute(tmp.z)
 
         out = (tmp.x < tolerance)
-        awkward.util.numpy.bitwise_and(out, tmp.y < tolerance, out=out)
-        awkward.util.numpy.bitwise_and(out, tmp.z < tolerance, out=out)
+        out = awkward.util.numpy.bitwise_and(out, tmp.y < tolerance)
+        out = awkward.util.numpy.bitwise_and(out, tmp.z < tolerance)
         return out
 
 class Methods(Common):
@@ -149,7 +148,7 @@ class Methods(Common):
     def angle(self, other, degrees=False):
         out = math.acos(self.cosdelta(other))
         if degrees:
-            out *= 180.0/math.pi
+            out = out * 180.0/math.pi
         return out
 
     def isopposite(self, other, tolerance=1e-10):

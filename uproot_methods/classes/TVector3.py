@@ -39,9 +39,9 @@ import uproot_methods.common.TVector
 
 class Common(object):
     def dot(self, other):
-        out = self.x * other.x
-        out += self.y * other.y
-        out += self.z * other.z
+        out = self.x*other.x
+        out = out + self.y*other.y
+        out = out + self.z*other.z
         return out
 
     def _cross(self, other):

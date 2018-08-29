@@ -45,10 +45,10 @@ class Common(object):
         return self.t
 
     def dot(self, other):
-        out = self.t * other.t
-        out -= self.x * other.x
-        out -= self.y * other.y
-        out -= self.z * other.z
+        out = self.t*other.t
+        out = out - self.x*other.x
+        out = out - self.y*other.y
+        out = out - self.z*other.z
         return out
 
     def energy(self):

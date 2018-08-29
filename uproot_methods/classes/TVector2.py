@@ -39,8 +39,8 @@ import uproot_methods.base
     
 class Common(object):
     def dot(self, other):
-        out = self.x * other.x
-        out += self.y * other.y
+        out = self.x*other.x
+        out = out + self.y*other.y
         return out
 
     # TODO:
