@@ -75,6 +75,9 @@ class Test(unittest.TestCase):
     def test_vector2_jagged(self):
         TVector2Jagged = type("TVector2Jagged", (awkward.JaggedArray, uproot_methods.classes.TVector2.ArrayMethods), {})
         a = TVector2Jagged.fromoffsets([0, 3, 3, 5, 10], TVector2Array(numpy.zeros(10), numpy.arange(10)))
+        a._generator = uproot_methods.classes.TVector2.TVector2
+        a._args = ()
+        a._kwargs = {}
         self.assertEqual(a.tolist(), [[TVector2(0, 0), TVector2(0, 1), TVector2(0, 2)], [], [TVector2(0, 3), TVector2(0, 4)], [TVector2(0, 5), TVector2(0, 6), TVector2(0, 7), TVector2(0, 8), TVector2(0, 9)]])
         self.assertEqual(a.x.tolist(), [[0.0, 0.0, 0.0], [], [0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]])
         self.assertEqual(a.y.tolist(), [[0, 1, 2], [], [3, 4], [5, 6, 7, 8, 9]])
@@ -116,6 +119,9 @@ class Test(unittest.TestCase):
     def test_vector3_jagged(self):
         TVector3Jagged = type("TVector3Jagged", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
         a = TVector3Jagged.fromoffsets([0, 3, 3, 5, 10], TVector3Array(numpy.zeros(10), numpy.arange(10), numpy.zeros(10)))
+        a._generator = uproot_methods.classes.TVector3.TVector3
+        a._args = ()
+        a._kwargs = {}
         self.assertEqual(a.tolist(), [[TVector3(0, 0, 0), TVector3(0, 1, 0), TVector3(0, 2, 0)], [], [TVector3(0, 3, 0), TVector3(0, 4, 0)], [TVector3(0, 5, 0), TVector3(0, 6, 0), TVector3(0, 7, 0), TVector3(0, 8, 0), TVector3(0, 9, 0)]])
         self.assertEqual(a.x.tolist(), [[0.0, 0.0, 0.0], [], [0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]])
         self.assertEqual(a.y.tolist(), [[0, 1, 2], [], [3, 4], [5, 6, 7, 8, 9]])
@@ -156,6 +162,9 @@ class Test(unittest.TestCase):
     def test_lorentzvector_jagged(self):
         TLorentzVectorJagged = type("TLorentzVectorJagged", (awkward.JaggedArray, uproot_methods.classes.TLorentzVector.ArrayMethods), {})
         a = TLorentzVectorJagged.fromoffsets([0, 3, 3, 5, 10], TLorentzVectorArray(numpy.zeros(10), numpy.arange(10), numpy.zeros(10), numpy.zeros(10)))
+        a._generator = uproot_methods.classes.TLorentzVector.TLorentzVector
+        a._args = ()
+        a._kwargs = {}
         self.assertEqual(a.tolist(), [[TLorentzVector(0, 0, 0, 0), TLorentzVector(0, 1, 0, 0), TLorentzVector(0, 2, 0, 0)], [], [TLorentzVector(0, 3, 0, 0), TLorentzVector(0, 4, 0, 0)], [TLorentzVector(0, 5, 0, 0), TLorentzVector(0, 6, 0, 0), TLorentzVector(0, 7, 0, 0), TLorentzVector(0, 8, 0, 0), TLorentzVector(0, 9, 0, 0)]])
         self.assertEqual(a.x.tolist(), [[0.0, 0.0, 0.0], [], [0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]])
         self.assertEqual(a.y.tolist(), [[0, 1, 2], [], [3, 4], [5, 6, 7, 8, 9]])
