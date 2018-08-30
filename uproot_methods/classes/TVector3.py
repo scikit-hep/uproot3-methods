@@ -104,9 +104,10 @@ class Common(object):
     def rotatez(self, angle):
         return self.rotate_axis(Methods(0.0, 0.0, 1.0), angle)
 
-class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods, awkward.ObjectArray):
-    def __init__(self, table):
+class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
+    def _initObjectArray(self, table):
         awkward.ObjectArray.__init__(self, table, lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
+        self.content.rowname = "TVector3"
 
     @property
     def x(self):
@@ -236,9 +237,9 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
     def rotate_euler(self, phi=0, theta=0, psi=0):
         return self.TVector3(x, y, z)
 
-class TVector3Array(ArrayMethods):
+class TVector3Array(ArrayMethods, awkward.ObjectArray):
     def __init__(self, x, y, z):
-        super(TVector3Array, self).__init__(awkward.Table())
+        self._initObjectArray(awkward.Table())
         self["fX"] = x
         self["fY"] = y
         self["fZ"] = z

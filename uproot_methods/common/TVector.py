@@ -32,6 +32,7 @@ import math
 import numbers
 import operator
 
+import awkward
 import awkward.util
 
 class Common(object):
