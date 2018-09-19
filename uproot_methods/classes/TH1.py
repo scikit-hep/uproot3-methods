@@ -98,7 +98,11 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def variances(self):
-        return self._fSumw2
+        return self._fSumw2[1:-1]
+
+    @property
+    def allvariances(self):
+        return self._fSumw2[:]
 
     @property
     def numpy(self):
