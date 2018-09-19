@@ -97,6 +97,10 @@ class Methods(uproot_methods.base.ROOTMethods):
         return self[:]
 
     @property
+    def variances(self):
+        return self._fSumw2
+
+    @property
     def numpy(self):
         low = self._fXaxis._fXmin
         high = self._fXaxis._fXmax
