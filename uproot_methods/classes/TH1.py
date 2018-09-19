@@ -34,6 +34,25 @@ import numpy
 
 import uproot_methods.base
 
+def new(numbins, low, high, title="", classname="TH1D"):
+    class TH1(Methods, list):
+        pass
+
+    class TAxis(object):
+        def __init__(self, fNbins, fXmin, fXmax):
+            self._fNbins = fNbins
+            self._fXmin = fXmin
+            self._fXmax = fXmax
+            self._fLabels = None
+
+    out = TH1.__new__(TH1)
+    out._fXaxis = TAxis(numbins, low, high)
+    out._fName = None
+    out._fTitle = title
+    out._classname = classname
+    out.extend([0] * (numbins + 2))
+    return out
+
 class Methods(uproot_methods.base.ROOTMethods):
     def __repr__(self):
         if self._fName is None:
