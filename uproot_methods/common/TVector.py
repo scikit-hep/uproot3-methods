@@ -36,19 +36,22 @@ import awkward
 import awkward.util
 
 class Common(object):
+    @property
     def mag2(self):
         return self.dot(self)
 
+    @property
     def mag(self):
-        return awkward.util.numpy.sqrt(self.mag2())
+        return awkward.util.numpy.sqrt(self.mag2)
 
+    @property
     def rho2(self):
         out = self.x*self.x
         out = out + self.y*self.y
         return out
 
     def delta_phi(self, other):
-        return (self.phi() - other.phi() + math.pi) % (2*math.pi) - math.pi
+        return (self.phi - other.phi + math.pi) % (2*math.pi) - math.pi
 
     def isparallel(self, other, tolerance=1e-10):
         return 1 - self.cosdelta(other) < tolerance
@@ -72,18 +75,21 @@ class Common(object):
         raise TypeError("spatial vectors have no natural ordering")
 
 class ArrayMethods(Common):
+    @property
     def unit(self):
-        return self / self.mag()
+        return self / self.mag
 
+    @property
     def rho(self):
-        out = self.rho2()
+        out = self.rho2
         return awkward.util.numpy.sqrt(out)
 
+    @property
     def phi(self):
         return awkward.util.numpy.arctan2(self.y, self.x)
 
     def cosdelta(self, other):
-        denom = self.mag2() * other.mag2()
+        denom = self.mag2 * other.mag2
         mask = (denom > 0)
         denom = denom[mask]
         denom[:] = awkward.util.numpy.sqrt(denom)
@@ -99,8 +105,8 @@ class ArrayMethods(Common):
     def angle(self, other, normal=None, degrees=False):
         out = awkward.util.numpy.arccos(self.cosdelta(other))
         if normal is not None:
-            a = self.unit()
-            b = other.unit()
+            a = self.unit
+            b = other.unit
             out = out * awkward.util.numpy.sign(normal.dot(a.cross(b)))
         if degrees:
             out = awkward.util.numpy.multiply(out, 180.0/awkward.util.numpy.pi)
@@ -129,18 +135,21 @@ class ArrayMethods(Common):
         return out
 
 class Methods(Common):
+    @property
     def unit(self):
-        return self / self.mag()
+        return self / self.mag
 
+    @property
     def rho(self):
-        return math.sqrt(self.rho2())
+        return math.sqrt(self.rho2)
 
+    @property
     def phi(self):
         return math.atan2(self.y, self.x)
 
     def cosdelta(self, other):
-        m1 = self.mag2()
-        m2 = other.mag2()
+        m1 = self.mag2
+        m2 = other.mag2
         if m1 == 0 or m2 == 0:
             return 1.0
         r = self.dot(other) / math.sqrt(m1 * m2)
@@ -211,9 +220,9 @@ class Methods(Common):
     def __pow__(self, other):
         if isinstance(other, (numbers.Number, awkward.util.numpy.number)):
             if other == 2:
-                return self.mag2()
+                return self.mag2
             else:
-                return self.mag2()**(0.5*other)
+                return self.mag2**(0.5*other)
         else:
             self._scalar(operator.pow, other)
 
@@ -256,7 +265,7 @@ class Methods(Common):
         return self._unary(operator.pos)
 
     def __abs__(self):
-        return self.mag()
+        return self.mag
 
     def __invert__(self):
         return self._unary(operator.invert)

@@ -80,12 +80,12 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
 
         elif ufunc is awkward.util.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, awkward.util.numpy.number)):
             if inputs[1] == 2:
-                return self.mag2()
+                return self.mag2
             else:
-                return self.mag2()**(0.5*inputs[1])
+                return self.mag2**(0.5*inputs[1])
 
         elif ufunc is awkward.util.numpy.absolute:
-            return self.mag()
+            return self.mag
 
         else:
             return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)

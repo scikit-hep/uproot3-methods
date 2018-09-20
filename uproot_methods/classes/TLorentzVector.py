@@ -51,68 +51,84 @@ class Common(object):
         out = out - self.z*other.z
         return out
 
+    @property
     def energy(self):
         return self.t
 
+    @property
     def p(self):
-        return self.vect.mag()
+        return self.p3.mag
 
+    @property
     def p2(self):
-        return self.vect.mag2()
+        return self.p3.mag2
 
+    @property
     def perp2(self):
-        return self.vect.rho2()
+        return self.p3.rho2
 
+    @property
     def perp(self):
-        return self.vect.rho()
+        return self.p3.rho
 
+    @property
     def pt2(self):
-        return self.vect.rho2()
+        return self.p3.rho2
 
+    @property
     def pt(self):
-        return self.vect.rho()
+        return self.p3.rho
 
+    @property
     def Et(self):
-        return self.energy() * self.pt() / self.p()
+        return self.energy * self.pt / self.p
 
+    @property
     def mag2(self):
         return self.dot(self)
 
+    @property
     def mass2(self):
-        return self.mag2()
+        return self.mag2
 
+    @property
     def mass(self):
-        return self.mag()
+        return self.mag
 
+    @property
     def mt2(self):
-        return self.energy()**2 - self.z**2
+        return self.energy**2 - self.z**2
         
+    @property
     def phi(self):
-        return self.vect.phi()
+        return self.p3.phi
 
+    @property
     def theta(self):
-        return self.vect.theta()
+        return self.p3.theta
 
+    @property
     def cottheta(self):
-        return self.vect.cottheta()
+        return self.p3.cottheta
 
+    @property
     def beta(self):
-        return self.p() / self.energy()
+        return self.p / self.energy
 
     def delta_phi(self, other):
-        return (self.phi() - other.phi() + math.pi) % (2*math.pi) - math.pi
+        return (self.phi - other.phi + math.pi) % (2*math.pi) - math.pi
 
     def delta_r2(self, other):
-        return (self.eta() - other.eta())**2 + self.delta_phi(other)**2
+        return (self.eta - other.eta)**2 + self.delta_phi(other)**2
 
     def _rotate_axis(self, axis, angle):
         if not isinstance(axis, uproot_methods.classes.TVector3.Common):
             raise TypeError("axis must be an (array of) TVector3")
-        vect = self.vect._rotate_axis(axis, angle)
-        return vect, self.t
+        p3 = self.p3._rotate_axis(axis, angle)
+        return p3, self.t
 
     def _rotate_euler(self, phi, theta, psi):
-        return self.vect._rotate_euler(phi, theta, psi), self.t
+        return self.p3._rotate_euler(phi, theta, psi), self.t
 
     def rotatex(self, angle):
         return self.rotate_axis(TVector3(1.0, 0.0, 0.0), angle)
@@ -124,10 +140,10 @@ class Common(object):
         return self.rotate_axis(TVector3(0.0, 0.0, 1.0), angle)
 
     def isspacelike(self, tolerance=1e-10):
-        return self.mag2() < -tolerance
+        return self.mag2 < -tolerance
 
     def istimelike(self, tolerance=1e-10):
-        return self.mag2() > tolerance
+        return self.mag2 > tolerance
 
     def __lt__(self, other):
         raise TypeError("Lorentz vectors have no natural ordering")
@@ -147,7 +163,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         self.content.rowname = "TLorentzVector"
 
     @property
-    def vect(self):
+    def p3(self):
         out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
         if isinstance(self, awkward.JaggedArray):
             out.__class__ = type("JaggedArray", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
@@ -174,24 +190,30 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     def t(self):
         return self["fE"]
 
+    @property
     def mag(self):
-        return awkward.util.numpy.sqrt(self.mag2())
+        return awkward.util.numpy.sqrt(self.mag2)
 
+    @property
     def mt(self):
-        mt2 = self.mt2()
+        mt2 = self.mt2
         sign = awkward.util.numpy.sign(mt2)
         return awkward.util.numpy.sqrt(awkward.util.numpy.absolute(mt2)) * sign
 
+    @property
     def eta(self):
-        return -awkward.util.numpy.log((1.0 - awkward.util.numpy.cos(self.theta())) / (1.0 + awkward.util.numpy.cos(self.theta()))) / 2.0
+        return -awkward.util.numpy.log((1.0 - awkward.util.numpy.cos(self.theta)) / (1.0 + awkward.util.numpy.cos(self.theta))) / 2.0
 
+    @property
     def rapidity(self):
         return awkward.util.numpy.log((self.t + self.z) / (self.t - self.z)) / 2.0
 
+    @property
     def unit(self):
-        return self / awkward.util.numpy.sqrt(self.mag())
+        return self / awkward.util.numpy.sqrt(self.mag)
 
-    def boost_vector(self):
+    @property
+    def boostp3(self):
         out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
         if isinstance(self, awkward.JaggedArray):
             out.__class__ = type("JaggedArray", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
@@ -202,19 +224,19 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         out["fZ"] = self.z / self.t
         return out
 
-    def boost(self, vect):
-        if not isinstance(vect, (uproot_methods.classes.TVector3.ArrayMethods, uproot_methods.classes.TVector3.Methods)):
-            raise TypeError("boost vect must be an (array of) TVector3")
+    def boost(self, p3):
+        if not isinstance(p3, (uproot_methods.classes.TVector3.ArrayMethods, uproot_methods.classes.TVector3.Methods)):
+            raise TypeError("boost p3 must be an (array of) TVector3")
 
-        b2 = vect.mag2()
+        b2 = p3.mag2
         gamma = (1 - b2)**(-0.5)
         gamma2 = awkward.util.numpy.zeros(b2.shape, dtype=awkward.util.numpy.float64)
         mask = (b2 != 0)
         gamma2[mask] = (gamma[mask] - 1) / b2[mask]
         del mask
 
-        bp = self.vect.dot(vect)
-        v = self.vect + gamma2*bp*vect + gamma*vect*self.t
+        bp = self.p3.dot(p3)
+        v = self.p3 + gamma2*bp*p3 + gamma*p3*self.t
         out = self.empty_like()
         out["fX"] = v.x
         out["fY"] = v.y
@@ -222,36 +244,37 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         out["fE"] = gamma*(self.t + bp)
         return out
 
+    @property
     def gamma(self):
-        out = self.beta()
+        out = self.beta
         mask = (out < 1) & (out > -1)
         out[mask] = (1 - out[mask]**2)**(-0.5)
         out[~mask] = awkward.util.numpy.inf
         return out
 
-    def delta_r(self):
-        return awkward.util.numpy.sqrt(self.delta_r2())
+    def delta_r(self, other):
+        return awkward.util.numpy.sqrt(self.delta_r2(other))
 
     def rotate_axis(self, axis, angle):
-        vect, t = self._rotate_axis(axis, angle)
+        p3, t = self._rotate_axis(axis, angle)
         out = self.empty_like()
-        out["fX"] = vect.x
-        out["fY"] = vect.y
-        out["fZ"] = vect.z
+        out["fX"] = p3.x
+        out["fY"] = p3.y
+        out["fZ"] = p3.z
         out["fE"] = t
         return out
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
-        vect, t = self._rotate_euler(phi, theta, psi)
+        p3, t = self._rotate_euler(phi, theta, psi)
         out = self.empty_like()
-        out["fX"] = vect.x
-        out["fY"] = vect.y
-        out["fZ"] = vect.z
+        out["fX"] = p3.x
+        out["fY"] = p3.y
+        out["fZ"] = p3.z
         out["fE"] = t
         return out
 
     def islightlike(self, tolerance=1e-10):
-        return awkward.util.numpy.absolute(self.mag2()) < tolerance
+        return awkward.util.numpy.absolute(self.mag2) < tolerance
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if method != "__call__":
@@ -276,12 +299,12 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
         elif ufunc is awkward.util.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, awkward.util.numpy.number)):
             if inputs[1] == 2:
-                return self.mag2()
+                return self.mag2
             else:
-                return self.mag2()**(0.5*inputs[1])
+                return self.mag2**(0.5*inputs[1])
 
         elif ufunc is awkward.util.numpy.absolute:
-            return self.mag()
+            return self.mag
 
         else:
             return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
@@ -290,7 +313,7 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
     @property
-    def vect(self):
+    def p3(self):
         return self._fP
 
     @property
@@ -337,63 +360,70 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     def _unary(self, operator):
         return TLorentzVector(operator(self.x), operator(self.y), operator(self.z), operator(self.t))
 
+    @property
     def mag(self):
-        return math.sqrt(self.mag2())
+        return math.sqrt(self.mag2)
 
+    @property
     def mt(self):
-        out = self.mt2()
+        out = self.mt2
         if out >= 0:
             return math.sqrt(out)
         else:
             return -math.sqrt(out)
 
+    @property
     def eta(self):
-        return -math.log((1.0 - math.cos(self.theta())) / (1.0 + math.cos(self.theta())))/2.0
+        return -math.log((1.0 - math.cos(self.theta)) / (1.0 + math.cos(self.theta)))/2.0
 
+    @property
     def rapidity(self):
         return math.log((self.t + self.z) / (self.t - self.z)) / 2.0
 
+    @property
     def unit(self):
-        return self / math.sqrt(self.mag())
+        return self / math.sqrt(self.mag)
 
-    def boost_vector(self):
+    @property
+    def boostp3(self):
         return uproot_methods.classes.TVector3.TVector3(self.x/self.t, self.y/self.t, self.z/self.t)
 
-    def boost(self, vect):
-        if not isinstance(vect, uproot_methods.classes.TVector3.Methods):
-            raise TypeError("boost vect must be a TVector3")
+    def boost(self, p3):
+        if not isinstance(p3, uproot_methods.classes.TVector3.Methods):
+            raise TypeError("boost p3 must be a TVector3")
 
-        b2 = vect.mag2()
+        b2 = p3.mag2
         gamma = (1.0 - b2)**(-0.5)
         if b2 != 0:
             gamma2 = (gamma - 1.0) / b2
         else:
             gamma2 = 0.0
 
-        bp = self.vect.dot(vect)
-        v = self.vect + gamma2*bp*vect + gamma*vect*self.t
+        bp = self.p3.dot(p3)
+        v = self.p3 + gamma2*bp*p3 + gamma*p3*self.t
         return self.__class__(v.x, v.y, v.z, gamma*(self.t + bp))
 
+    @property
     def gamma(self):
-        out = self.beta()
+        out = self.beta
         if -1 < out < 1:
             return (1 - out**2)**(-0.5)
         else:
             return float("inf")
 
-    def delta_r(self):
-        return math.sqrt(self.delta_r2())
+    def delta_r(self, other):
+        return math.sqrt(self.delta_r2(other))
 
     def rotate_axis(self, axis, angle):
-        vect, t = self._rotate_axis(axis, angle)
-        return self.__class__(vect.x, vect.y, vect.z, t)
+        p3, t = self._rotate_axis(axis, angle)
+        return self.__class__(p3.x, p3.y, p3.z, t)
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
-        vect, t = self._rotate_euler(phi, theta, psi)
-        return self.__class__(vect.x, vect.y, vect.z, t)
+        p3, t = self._rotate_euler(phi, theta, psi)
+        return self.__class__(p3.x, p3.y, p3.z, t)
 
     def islightlike(self, tolerance=1e-10):
-        return abs(self.mag2()) < tolerance
+        return abs(self.mag2) < tolerance
 
     def __add__(self, other):
         return self._vector(operator.add, other)
@@ -446,9 +476,9 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     def __pow__(self, other):
         if isinstance(other, (numbers.Number, awkward.util.numpy.number)):
             if other == 2:
-                return self.mag2()
+                return self.mag2
             else:
-                return self.mag2()**(0.5*other)
+                return self.mag2**(0.5*other)
         else:
             self._scalar(operator.pow, other)
 
@@ -491,7 +521,7 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
         return self._unary(operator.pos)
 
     def __abs__(self):
-        return self.mag()
+        return self.mag
 
     def __invert__(self):
         return self._unary(operator.invert)
@@ -518,21 +548,21 @@ class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
         return cls.origin(array.shape, array.dtype)
 
     @classmethod
-    def from_vect(cls, vect, t):
+    def from_p3(cls, p3, t):
         out = cls.__new__(cls)
-        out["fX"] = vect.x
-        out["fY"] = vect.y
-        out["fZ"] = vect.z
+        out["fX"] = p3.x
+        out["fY"] = p3.y
+        out["fZ"] = p3.z
         out["fE"] = t
         return out
 
     @classmethod
     def from_spherical(cls, r, theta, phi, t):
-        return cls.from_vect(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t)
+        return cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t)
 
     @classmethod
     def from_cylindrical(cls, rho, phi, z, t):
-        return cls.from_vect(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t)
+        return cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t)
 
     @classmethod
     def from_xyzm(cls, x, y, z, m):
@@ -550,8 +580,8 @@ class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
         x = pt * awkward.util.numpy.cos(phi),
         y = pt * awkward.util.numpy.sin(phi),
         z = pt * awkward.util.numpy.sinh(eta)
-        vect = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
-        return cls.from_vect(vect, awkward.util.numpy.sqrt(x*x + y*y + z*z + m*m*awkward.util.numpy.sign(m)))
+        p3 = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
+        return cls.from_p3(p3, awkward.util.numpy.sqrt(x*x + y*y + z*z + m*m*awkward.util.numpy.sign(m)))
 
     @property
     def x(self):
@@ -603,19 +633,19 @@ class TLorentzVector(Methods):
         return cls(0.0, 0.0, 0.0, 0.0)
 
     @classmethod
-    def from_vect(cls, vect, t):
+    def from_p3(cls, p3, t):
         out = cls.__new__(cls)
-        out._fP = vect
+        out._fP = p3
         out._fE = t
         return out
 
     @classmethod
     def from_spherical(cls, r, theta, phi, t):
-        return cls.from_vect(uproot_methods.classes.TVector3.Methods.from_spherical(r, theta, phi), t)
+        return cls.from_p3(uproot_methods.classes.TVector3.Methods.from_spherical(r, theta, phi), t)
 
     @classmethod
     def from_cylindrical(cls, rho, phi, z, t):
-        return cls.from_vect(uproot_methods.classes.TVector3.Methods.from_cylindrical(rho, phi, z), t)
+        return cls.from_p3(uproot_methods.classes.TVector3.Methods.from_cylindrical(rho, phi, z), t)
 
     @classmethod
     def from_xyzm(cls, x, y, z, m):

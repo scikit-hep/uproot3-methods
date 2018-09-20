@@ -49,13 +49,14 @@ class Common(object):
                 self.z*other.x - self.x*other.z,
                 self.x*other.y - self.y*other.x)
 
+    @property
     def cottheta(self):
-        out = self.rho()
+        out = self.rho
         out /= self.z
         return out
 
     def _rotate_axis(self, axis, angle):
-        u = axis.unit()
+        u = axis.unit
         c = awkward.util.numpy.cos(angle)
         s = awkward.util.numpy.sin(angle)
         c1 = 1 - c
@@ -129,8 +130,9 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
         out["fZ"] = z
         return out
 
+    @property
     def theta(self):
-        return awkward.util.numpy.arctan2(self.rho(), self.z)
+        return awkward.util.numpy.arctan2(self.rho, self.z)
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)
@@ -170,12 +172,12 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
 
         elif ufunc is awkward.util.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, awkward.util.numpy.number)):
             if inputs[1] == 2:
-                return self.mag2()
+                return self.mag2
             else:
-                return self.mag2()**(0.5*inputs[1])
+                return self.mag2**(0.5*inputs[1])
 
         elif ufunc is awkward.util.numpy.absolute:
-            return self.mag()
+            return self.mag
 
         else:
             return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
@@ -227,8 +229,9 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         x, y, z = self._cross(other)
         return self.TVector3(x, y, z)
 
+    @property
     def theta(self):
-        return math.atan2(self.rho(), self.z)
+        return math.atan2(self.rho, self.z)
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)
