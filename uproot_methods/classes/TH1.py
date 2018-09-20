@@ -28,6 +28,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import numbers
 import sys
 
 import numpy
@@ -183,7 +184,7 @@ class Methods(uproot_methods.base.ROOTMethods):
             data = numpy.array(data)
 
         if isinstance(weights, numbers.Real):
-            weights = numpy.empty_like(data)
+            weights = numpy.full(data.shape, weights)
 
         freq, edges = numpy.histogram(data, bins=numbins, range=(low, high), weights=weights, density=False)
         for i, x in enumerate(freq):

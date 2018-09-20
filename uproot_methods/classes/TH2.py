@@ -28,6 +28,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import numbers
 import sys
 
 import numpy
@@ -236,9 +237,7 @@ class Methods(uproot_methods.base.ROOTMethods):
             datay = numpy.array(datay)
 
         if isinstance(weights, numbers.Real):
-            tmp_weight = weights
-            weights = numpy.empty_like(datax)
-            weights.fill(tmp_weight)            # assign all elements of the array to the initial value
+            weights = numpy.full(datax.shape, weights)
 
         freq, xedges, yedges = numpy.histogram2d(datax,
                                                  datay,
