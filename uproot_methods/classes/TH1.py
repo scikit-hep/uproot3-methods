@@ -124,6 +124,8 @@ class Methods(uproot_methods.base.ROOTMethods):
             return (float("-inf"), low)
         elif index == len(self) - 1:
             return (high, float("inf"))
+        elif len(self._fXaxis._fXbins) == self._fXaxis._fNbins + 1:
+            return (self._fXaxis._fXbins[index - 1], self._fXaxis._fXbins[index])
         else:
             norm = (high - low) / self._fXaxis._fNbins
             return (index - 1)*norm + low, index*norm + low
