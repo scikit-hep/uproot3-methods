@@ -20,13 +20,17 @@ Install uproot-methods like any other Python package:
 
     pip install uproot-methods
 
-or similar (use ``sudo``, ``--user``, ``virtualenv``, or ``conda`` if you wish).
+or similar (use ``sudo``, ``--user``, ``virtualenv``, or pip-in-conda if you wish).
 
 Strict dependencies:
 ====================
 
 - `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (2.7+, 3.4+)
-- `Numpy <https://scipy.org/install.html>`__
+
+The following are installed automatically when you install uproot with pip:
+
+- `Numpy <https://scipy.org/install.html>`__ (1.13.1+)
+- `awkward-array <https://pypi.org/project/awkward>`__ to manipulate data from non-flat TTrees, such as jagged arrays (`part of Scikit-HEP <https://github.com/scikit-hep/awkward-array>`__)
 
 .. inclusion-marker-3-do-not-remove
 
