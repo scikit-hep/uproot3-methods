@@ -29,6 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numbers
+import math
 import sys
 
 import numpy
@@ -191,7 +192,10 @@ class Methods(uproot_methods.base.ROOTMethods):
         high = self._fXaxis._fXmax
         norm = (high - low) / self._fXaxis._fNbins
         freq = numpy.array(self.values, dtype=self._dtype.newbyteorder("="))
-        edges = numpy.array([i*norm + low for i in range(self.numbins + 1)])
+        if getattr(self._fXaxis, "_fXbins", None):
+            edges = numpy.array(self._fXaxis._fXbins)
+        else:
+            edges = numpy.array([i*norm + low for i in range(self.numbins + 1)])
         return freq, edges
 
     def physt(self):
@@ -201,14 +205,45 @@ class Methods(uproot_methods.base.ROOTMethods):
         high = self._fXaxis._fXmax
         binwidth = (high - low) / self._fXaxis._fNbins
         freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
+        if getattr(self._fXaxis, "_fXbins", None):
+            binning = physt.binnings.NumpyBinning(numpy.array(self._fXaxis._fXbins))
+        else:
+            binning = physt.binnings.FixedWidthBinning(binwidth, bin_count=self._fXaxis._fNbins, min=low)
         return physt.histogram1d.Histogram1D(
-            physt.binnings.FixedWidthBinning(binwidth,
-                                             bin_count=self._fXaxis._fNbins,
-                                             min=low),
+            binning,
             frequencies=freq[1:-1],
             underflow=freq[0],
             overflow=freq[-1],
             name=getattr(self, "_fTitle", b"").decode("utf-8", "ignore"))
+
+    def hepdata(self, independent={"name": None, "units": None}, dependent={"name": "counts", "units": None}, qualifiers=[], yamloptions={}):
+        if independent["name"] is None and getattr(self, "_fTitle", b""):
+            independent = dict(independent)
+            if isinstance(self._fTitle, bytes):
+                independent["name"] = self._fTitle.decode("utf-8", "ignore")
+            else:
+                independent["name"] = self._fTitle
+
+        if getattr(self._fXaxis, "_fXbins", None):
+            independent_values = [{"low": float(low), "high": float(high)} for low, high in zip(self._fXaxis._fXbins[:-1], self._fXaxis._fXbins[1:])]
+        else:
+            low = self._fXaxis._fXmin
+            high = self._fXaxis._fXmax
+            norm = (high - low) / self._fXaxis._fNbins
+            independent_values = [{"low": float(i*norm + low), "high": float((i + 1)*norm + low)} for i in range(self.numbins)]
+
+        if getattr(self, "_fSumw2", None):
+            dependent_values = [{"value": float(value), "errors": [{"symerror": math.sqrt(variance), "label": "stat"}]} for value, variance in zip(self.values, self.variances)]
+        else:
+            dependent_values = [{"value": float(value), "errors": [{"symerror": math.sqrt(value), "label": "stat"}]} for value in self.values]
+
+        out = {"independent_variables": [{"header": independent, "values": independent_values}], "dependent_variables": [{"header": dependent, "qualifiers": qualifiers, "values": dependent_values}]}
+
+        if yamloptions is None:
+            return out
+        else:
+            import yaml
+            return yaml.dump(out, **yamloptions)
 
 def _histtype(content):
     if issubclass(content.dtype.type, (numpy.bool_, numpy.bool)):
@@ -251,7 +286,7 @@ def from_numpy(histogram):
     out = TH1.__new__(TH1)
     out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1], None)
     if not numpy.array_equal(edges, numpy.linspace(edges[0], edges[-1], len(edges), dtype=edges.dtype)):
-        out._fXaxis = edges.astype(">f8")
+        out._fXaxis._fXbins = edges.astype(">f8")
 
     centers = (edges[:-1] + edges[1:]) / 2.0
     out._fEntries = out._fTsumw = out._fTsumw2 = content.sum()
@@ -298,7 +333,7 @@ def from_physt(histogram):
                             histogram.binning.first_edge,
                             histogram.binning.last_edge)
         if not histogram.binning.is_regular():
-            out._fXaxis = histogram.binning.numpy_bins.astype(">f8")
+            out._fXaxis._fXbins = histogram.binning.numpy_bins.astype(">f8")
     else:
         raise NotImplementedError(histogram.binning)
 
