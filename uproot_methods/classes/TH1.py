@@ -86,32 +86,6 @@ class Methods(uproot_methods.base.ROOTMethods):
     def allvariances(self):
         return self._fSumw2[:]
 
-    @property
-    def numpy(self):
-        low = self._fXaxis._fXmin
-        high = self._fXaxis._fXmax
-        norm = (high - low) / self._fXaxis._fNbins
-        freq = numpy.array(self.values, dtype=self._dtype.newbyteorder("="))
-        edges = numpy.array([i*norm + low for i in range(self.numbins + 1)])
-        return freq, edges
-
-    @property
-    def physt(self):
-        import physt.binnings
-        import physt.histogram1d
-        low = self._fXaxis._fXmin
-        high = self._fXaxis._fXmax
-        binwidth = (high - low) / self._fXaxis._fNbins
-        freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
-        return physt.histogram1d.Histogram1D(
-            physt.binnings.FixedWidthBinning(binwidth,
-                                             bin_count=self._fXaxis._fNbins,
-                                             min=low),
-            frequencies=freq[1:-1],
-            underflow=freq[0],
-            overflow=freq[-1],
-            name=getattr(self, "_fTitle", b"").decode("utf-8", "ignore"))
-
     def interval(self, index):
         if index < 0:
             index += len(self)
@@ -140,7 +114,7 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def xlabels(self):
-        if self._fXaxis._fLabels is None:
+        if getattr(self._fXaxis, "_fLabels", None) is None:
             return None
         else:
             return [str(x) for x in self._fXaxis._fLabels]
@@ -212,26 +186,57 @@ class Methods(uproot_methods.base.ROOTMethods):
             stream.write(out)
             stream.write("\n")
 
-def new(numbins, low, high, title="", classname="TH1D"):
-    class TH1(Methods, list):
-        pass
+    def numpy(self):
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
+        norm = (high - low) / self._fXaxis._fNbins
+        freq = numpy.array(self.values, dtype=self._dtype.newbyteorder("="))
+        edges = numpy.array([i*norm + low for i in range(self.numbins + 1)])
+        return freq, edges
 
-    class TAxis(object):
-        def __init__(self, fNbins, fXmin, fXmax):
-            self._fNbins = fNbins
-            self._fXmin = fXmin
-            self._fXmax = fXmax
-            self._fLabels = None
+    def physt(self):
+        import physt.binnings
+        import physt.histogram1d
+        low = self._fXaxis._fXmin
+        high = self._fXaxis._fXmax
+        binwidth = (high - low) / self._fXaxis._fNbins
+        freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
+        return physt.histogram1d.Histogram1D(
+            physt.binnings.FixedWidthBinning(binwidth,
+                                             bin_count=self._fXaxis._fNbins,
+                                             min=low),
+            frequencies=freq[1:-1],
+            underflow=freq[0],
+            overflow=freq[-1],
+            name=getattr(self, "_fTitle", b"").decode("utf-8", "ignore"))
 
-    out = TH1.__new__(TH1)
-    out._fXaxis = TAxis(numbins, low, high)
-    out._fName = None
-    out._fTitle = title
-    out._classname = classname
-    out.extend([0] * (numbins + 2))
-    return out
+def _histtype(content):
+    if issubclass(content.dtype.type, (numpy.bool_, numpy.bool)):
+        return b"TH1C", content.astype(">i1")
+    elif issubclass(content.dtype.type, numpy.int8):
+        return b"TH1C", content.astype(">i1")
+    elif issubclass(content.dtype.type, numpy.uint8) and content.max() <= numpy.iinfo(numpy.int8).max:
+        return b"TH1C", content.astype(">i1")
+    elif issubclass(content.dtype.type, numpy.uint8):
+        return b"TH1S", content.astype(">i2")
+    elif issubclass(content.dtype.type, numpy.int16):
+        return b"TH1S", content.astype(">i2")
+    elif issubclass(content.dtype.type, numpy.uint16) and content.max() <= numpy.iinfo(numpy.int16).max:
+        return b"TH1S", content.astype(">i2")
+    elif issubclass(content.dtype.type, numpy.uint16):
+        return b"TH1I", content.astype(">i4")
+    elif issubclass(content.dtype.type, numpy.int32):
+        return b"TH1I", content.astype(">i4")
+    elif issubclass(content.dtype.type, numpy.uint32) and content.max() <= numpy.iinfo(numpy.int32).max:
+        return b"TH1I", content.astype(">i4")
+    elif issubclass(content.dtype.type, numpy.integer) and numpy.iinfo(numpy.int32).min <= content.min() and content.max() <= numpy.iinfo(numpy.int32).max:
+        return b"TH1I", content.astype(">i4")
+    elif issubclass(content.dtype.type, numpy.float32):
+        return b"TH1F", content.astype(">f4")
+    else:
+        return b"TH1D", content.astype(">f8")
 
-def fromnumpy(histogram):
+def from_numpy(histogram):
     content, edges = histogram[:2]
 
     class TH1(Methods, list):
@@ -242,7 +247,6 @@ def fromnumpy(histogram):
             self._fNbins = fNbins
             self._fXmin = fXmin
             self._fXmax = fXmax
-            self._fLabels = None
 
     out = TH1.__new__(TH1)
     out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1], None)
@@ -259,47 +263,72 @@ def fromnumpy(histogram):
     else:
         out._fTitle = b""
 
-    if issubclass(content.dtype.type, (numpy.bool_, numpy.bool)):
-        out._classname = b"TH1C"
-        content = content.astype(">i1")
-    elif issubclass(content.dtype.type, numpy.int8):
-        out._classname = b"TH1C"
-        content = content.astype(">i1")
-    elif issubclass(content.dtype.type, numpy.uint8) and content.max() <= numpy.iinfo(numpy.int8).max:
-        out._classname = b"TH1C"
-        content = content.astype(">i1")
-    elif issubclass(content.dtype.type, numpy.uint8):
-        out._classname = b"TH1S"
-        content = content.astype(">i2")
-    elif issubclass(content.dtype.type, numpy.int16):
-        out._classname = b"TH1S"
-        content = content.astype(">i2")
-    elif issubclass(content.dtype.type, numpy.uint16) and content.max() <= numpy.iinfo(numpy.int16).max:
-        out._classname = b"TH1S"
-        content = content.astype(">i2")
-    elif issubclass(content.dtype.type, numpy.uint16):
-        out._classname = b"TH1I"
-        content = content.astype(">i4")
-    elif issubclass(content.dtype.type, numpy.int32):
-        out._classname = b"TH1I"
-        content = content.astype(">i4")
-    elif issubclass(content.dtype.type, numpy.uint32) and content.max() <= numpy.iinfo(numpy.int32).max:
-        out._classname = b"TH1I"
-        content = content.astype(">i4")
-    elif issubclass(content.dtype.type, numpy.integer) and numpy.iinfo(numpy.int32).min <= content.min() and content.max() <= numpy.iinfo(numpy.int32).max:
-        out._classname = b"TH1I"
-        content = content.astype(">i4")
-    elif issubclass(content.dtype.type, numpy.float32):
-        out._classname = b"TH1F"
-        content = content.astype(">f4")
-    else:
-        out._classname = b"TH1D"
-        content = content.astype(">f8")
+    out._classname, content = _histtype(content)
 
     valuesarray = numpy.empty(len(content) + 2, dtype=content.dtype)
     valuesarray[1:-1] = content
     valuesarray[0] = 0
     valuesarray[-1] = 0
+
+    out.extend(valuesarray)
+
+    return out
+
+def from_physt(histogram):
+    import physt.binnings
+    import physt.histogram1d
+
+    class TH1(Methods, list):
+        pass
+
+    class TAxis(object):
+        def __init__(self, fNbins, fXmin, fXmax):
+            self._fNbins = fNbins
+            self._fXmin = fXmin
+            self._fXmax = fXmax
+
+    out = TH1.__new__(TH1)
+
+    if isinstance(histogram.binning, physt.binnings.FixedWidthBinning):
+        out._fXaxis = TAxis(histogram.binning.bin_count,
+                            histogram.binning.first_edge,
+                            histogram.binning.last_edge)
+    elif isinstance(histogram.binning, physt.binnings.NumpyBinning):
+        out._fXaxis = TAxis(histogram.binning.bin_count,
+                            histogram.binning.first_edge,
+                            histogram.binning.last_edge)
+        if not histogram.binning.is_regular():
+            out._fXaxis = histogram.binning.numpy_bins.astype(">f8")
+    else:
+        raise NotImplementedError(histogram.binning)
+
+    centers = histogram.bin_centers
+    content = histogram.frequencies
+    mean = histogram.mean()
+    variance = histogram.variance()
+    out._fEntries = content.sum()   # is there a #entries independent of weights?
+    out._fTsumw = content.sum()
+    out._fTsumw2 = histogram.errors2.sum()
+    if mean is None:
+        out._fTsumwx = (content * centers).sum()
+    else:
+        out._fTsumwx = mean * out._fTsumw
+    if mean is None or variance is None:
+        out._fTsumwx2 = (content * centers**2).sum()
+    else:
+        out._fTsumwx2 = (mean**2 + variance) * out._fTsumw2
+
+    if histogram.name is not None:
+        out._fTitle = histogram.name
+    else:
+        out._fTitle = b""
+
+    out._classname, content = _histtype(content)
+
+    valuesarray = numpy.empty(len(content) + 2, dtype=content.dtype)
+    valuesarray[1:-1] = content
+    valuesarray[0] = histogram.underflow
+    valuesarray[-1] = histogram.overflow
 
     out.extend(valuesarray)
 
