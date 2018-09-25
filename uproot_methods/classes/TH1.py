@@ -326,13 +326,13 @@ def from_numpy(histogram):
         pass
 
     class TAxis(object):
-        def __init__(self, fNbins, fXmin, fXmax, fXbins):
+        def __init__(self, fNbins, fXmin, fXmax):
             self._fNbins = fNbins
             self._fXmin = fXmin
             self._fXmax = fXmax
 
     out = TH1.__new__(TH1)
-    out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1], None)
+    out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1])
     if not numpy.array_equal(edges, numpy.linspace(edges[0], edges[-1], len(edges), dtype=edges.dtype)):
         out._fXaxis._fXbins = edges.astype(">f8")
 
@@ -357,14 +357,90 @@ def from_numpy(histogram):
 
     return out
 
-# def from_pandas(histogram):
-#     import pandas
+def from_pandas(histogram):
+    import pandas
 
-#     sparse = histogram.index[numpy.isfinite(histogram.index.left) & numpy.isfinite(histogram.index.right)]
+    histogram = histogram.sort_index(ascending=True, inplace=False)
+    if not histogram.index.is_non_overlapping_monotonic:
+        raise ValueError("intervals overlap; cannot form a histogram")
 
+    sparse = histogram.index[numpy.isfinite(histogram.index.left) & numpy.isfinite(histogram.index.right)]
+    if (sparse.right[:-1] == sparse.left[1:]).all():
+        dense = sparse
+    else:
+        pairs = numpy.empty(len(sparse) * 2, dtype=numpy.float64)
+        pairs[::2] = sparse.left
+        pairs[1::2] = sparse.right
+        nonempty = numpy.empty(len(pairs), dtype=numpy.bool_)
+        nonempty[:-1] = (pairs[1:] != pairs[:-1])
+        nonempty[-1] = True
+        dense = pandas.IntervalIndex.from_breaks(pairs[nonempty], closed="left")
 
+    densehist = pandas.DataFrame(index=dense.left).join(histogram.reindex(histogram.index.left))
+    densehist.fillna(0, inplace=True)
 
+    underflowhist = histogram[numpy.isinf(histogram.index.left)]
+    overflowhist = histogram[numpy.isinf(histogram.index.right)]
 
+    content = numpy.array(densehist["count"])
+
+    sumw2 = numpy.empty(len(content) + 2, dtype=numpy.float64)
+    if "variance" in densehist.columns:
+        sumw2source = "variance"
+    else:
+        sumw2source = "count"
+    sumw2[1:-1] = densehist[sumw2source]
+    if len(underflowhist) == 0:
+        sumw2[0] = 0
+    else:
+        sumw2[0] = underflowhist[sumw2source]
+    if len(overflowhist) == 0:
+        sumw2[-1] = 0
+    else:
+        sumw2[-1] = overflowhist[sumw2source]
+
+    edges = numpy.empty(len(densehist) + 1, dtype=numpy.float64)
+    edges[:-1] = dense.left
+    edges[-1] = dense.right[-1]
+
+    class TH1(Methods, list):
+        pass
+
+    class TAxis(object):
+        def __init__(self, fNbins, fXmin, fXmax):
+            self._fNbins = fNbins
+            self._fXmin = fXmin
+            self._fXmax = fXmax
+
+    out = TH1.__new__(TH1)
+    out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1])
+    out._fXaxis._fXbins = edges
+
+    centers = (edges[:-1] + edges[1:]) / 2.0
+    out._fEntries = content.sum()
+    out._fTsumw = content.sum()
+    out._fTsumw2 = sumw2.sum()
+    out._fTsumwx = (content * centers).sum()
+    out._fTsumwx2 = (content * centers**2).sum()
+
+    out._fTitle = b""
+
+    out._classname, content = _histtype(content)
+
+    valuesarray = numpy.empty(len(content) + 2, dtype=content.dtype)
+    valuesarray[1:-1] = content
+    if len(underflowhist) == 0:
+        valuesarray[0] = 0
+    else:
+        valuesarray[0] = underflowhist["count"]
+    if len(overflowhist) == 0:
+        valuesarray[-1] = 0
+    else:
+        valuesarray[-1] = overflowhist["count"]
+
+    out.extend(valuesarray)
+
+    return out
 
 def from_physt(histogram):
     import physt.binnings
