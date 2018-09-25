@@ -195,10 +195,9 @@ class Methods(uproot_methods.base.ROOTMethods):
             edges = numpy.linspace(self._fXaxis._fXmin, self._fXaxis._fXmax, self._fXaxis._fNbins + 1)
         return freq, edges
 
-    def pandas(self, underflow=True, overflow=True):
+    def pandas(self, underflow=True, overflow=True, variance=True):
         import pandas
         freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
-        print("freq", len(freq))
 
         if not underflow and not overflow:
             freq = freq[1:-1]
@@ -229,19 +228,23 @@ class Methods(uproot_methods.base.ROOTMethods):
         index = pandas.IntervalIndex.from_arrays(lefts[nonzero], rights[nonzero], closed="left")
 
         data = {"count": freq[nonzero]}
-        if getattr(self, "_fSumw2", None):
-            sumw2 = self._fSumw2
-            if not underflow and not overflow:
-                sumw2 = sumw2[1:-1]
-            elif not underflow:
-                sumw2 = sumw2[1:]
-            elif not overflow:
-                sumw2 = sumw2[:-1]
-            data["variance"] = numpy.array(sumw2)[nonzero]
-        else:
-            data["variance"] = data["count"]
+        columns = ["count"]
 
-        return pandas.DataFrame(index=index, data=data, columns=["count", "variance"])
+        if variance:
+            if getattr(self, "_fSumw2", None):
+                sumw2 = self._fSumw2
+                if not underflow and not overflow:
+                    sumw2 = sumw2[1:-1]
+                elif not underflow:
+                    sumw2 = sumw2[1:]
+                elif not overflow:
+                    sumw2 = sumw2[:-1]
+                data["variance"] = numpy.array(sumw2)[nonzero]
+            else:
+                data["variance"] = data["count"]
+            columns.append("variance")
+
+        return pandas.DataFrame(index=index, data=data, columns=columns)
 
     def physt(self):
         import physt.binnings
@@ -353,6 +356,15 @@ def from_numpy(histogram):
     out.extend(valuesarray)
 
     return out
+
+# def from_pandas(histogram):
+#     import pandas
+
+#     sparse = histogram.index[numpy.isfinite(histogram.index.left) & numpy.isfinite(histogram.index.right)]
+
+
+
+
 
 def from_physt(histogram):
     import physt.binnings
