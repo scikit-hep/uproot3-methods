@@ -188,26 +188,71 @@ class Methods(uproot_methods.base.ROOTMethods):
             stream.write("\n")
 
     def numpy(self):
-        low = self._fXaxis._fXmin
-        high = self._fXaxis._fXmax
-        norm = (high - low) / self._fXaxis._fNbins
         freq = numpy.array(self.values, dtype=self._dtype.newbyteorder("="))
         if getattr(self._fXaxis, "_fXbins", None):
             edges = numpy.array(self._fXaxis._fXbins)
         else:
-            edges = numpy.array([i*norm + low for i in range(self.numbins + 1)])
+            edges = numpy.linspace(self._fXaxis._fXmin, self._fXaxis._fXmax, self._fXaxis._fNbins + 1)
         return freq, edges
+
+    def pandas(self, underflow=True, overflow=True):
+        import pandas
+        freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
+        print("freq", len(freq))
+
+        if not underflow and not overflow:
+            freq = freq[1:-1]
+        elif not underflow:
+            freq = freq[1:]
+        elif not overflow:
+            freq = freq[:-1]
+
+        edges = numpy.empty(self._fXaxis._fNbins + 3, dtype=numpy.float64)
+        edges[0] = -numpy.inf
+        edges[-1] = numpy.inf
+
+        if getattr(self._fXaxis, "_fXbins", None):
+            edges[1:-1] = numpy.array(self._fXaxis._fXbins)
+        else:
+            edges[1:-1] = numpy.linspace(self._fXaxis._fXmin, self._fXaxis._fXmax, self._fXaxis._fNbins + 1)
+
+        if not underflow and not overflow:
+            edges = edges[1:-1]
+        elif not underflow:
+            edges = edges[1:]
+        elif not overflow:
+            edges = edges[:-1]
+
+        lefts, rights = edges[:-1], edges[1:]
+
+        nonzero = (freq != 0.0)
+        index = pandas.IntervalIndex.from_arrays(lefts[nonzero], rights[nonzero], closed="left")
+
+        data = {"count": freq[nonzero]}
+        if getattr(self, "_fSumw2", None):
+            sumw2 = self._fSumw2
+            if not underflow and not overflow:
+                sumw2 = sumw2[1:-1]
+            elif not underflow:
+                sumw2 = sumw2[1:]
+            elif not overflow:
+                sumw2 = sumw2[:-1]
+            data["variance"] = numpy.array(sumw2)[nonzero]
+        else:
+            data["variance"] = data["count"]
+
+        return pandas.DataFrame(index=index, data=data, columns=["count", "variance"])
 
     def physt(self):
         import physt.binnings
         import physt.histogram1d
-        low = self._fXaxis._fXmin
-        high = self._fXaxis._fXmax
-        binwidth = (high - low) / self._fXaxis._fNbins
         freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
         if getattr(self._fXaxis, "_fXbins", None):
             binning = physt.binnings.NumpyBinning(numpy.array(self._fXaxis._fXbins))
         else:
+            low = self._fXaxis._fXmin
+            high = self._fXaxis._fXmax
+            binwidth = (high - low) / self._fXaxis._fNbins
             binning = physt.binnings.FixedWidthBinning(binwidth, bin_count=self._fXaxis._fNbins, min=low)
         return physt.histogram1d.Histogram1D(
             binning,
@@ -339,6 +384,9 @@ def from_physt(histogram):
 
     centers = histogram.bin_centers
     content = histogram.frequencies
+
+    out._fSumw2 = [0] + list(histogram.errors2) + [0]
+
     mean = histogram.mean()
     variance = histogram.variance()
     out._fEntries = content.sum()   # is there a #entries independent of weights?
