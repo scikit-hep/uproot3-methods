@@ -40,6 +40,8 @@ def towriteable(obj):
         def types(cls, obj):
             if cls is numpy.ndarray:
                 yield ("numpy", "ndarray", len(obj.shape), str(obj.dtype))
+            elif cls.__module__ == "pandas.core.frame" and cls.__name__ == "DataFrame":
+                yield ("pandas.core.frame", "DataFrame", obj.index.__class__.__name__, set(obj.columns))
             else:
                 yield (cls.__module__, cls.__name__)
             for x in cls.__bases__:
@@ -51,6 +53,9 @@ def towriteable(obj):
 
         elif isinstance(obj, tuple) and any(x[:2] == ("numpy", "ndarray") for x in types(obj[0].__class__, obj[0])) and any(x[:2] == ("numpy", "ndarray") for x in types(obj[1].__class__, obj[1])) and len(obj[0]) + 1 == len(obj[1]):
             return ("uproot_methods.classes.TH1", "from_numpy", "uproot.write.objects.TH1", "TH1")
+
+        elif any(x[:3] == ("pandas.core.frame", "DataFrame", "IntervalIndex") and "count" in x[3] for x in types(obj.__class__, obj)):
+            return ("uproot_methods.classes.TH1", "from_pandas", "uproot.write.objects.TH1", "TH1")
 
         elif any(x == ("physt.histogram1d", "Histogram1D") for x in types(obj.__class__, obj)):
             return ("uproot_methods.classes.TH1", "from_physt", "uproot.write.objects.TH1", "TH1")
