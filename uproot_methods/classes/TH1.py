@@ -222,10 +222,15 @@ class Methods(uproot_methods.base.ROOTMethods):
         elif not overflow:
             edges = edges[:-1]
 
+        if getattr(self, "_fTitle", b"") == b"":
+            name = None
+        else:
+            name = self._fTitle.decode("utf-8", "ignore")
+
         lefts, rights = edges[:-1], edges[1:]
 
         nonzero = (freq != 0.0)
-        index = pandas.IntervalIndex.from_arrays(lefts[nonzero], rights[nonzero], closed="left")
+        index = pandas.IntervalIndex.from_arrays(lefts[nonzero], rights[nonzero], closed="left", name=name)
 
         data = {"count": freq[nonzero]}
         columns = ["count"]
@@ -423,7 +428,12 @@ def from_pandas(histogram):
     out._fTsumwx = (content * centers).sum()
     out._fTsumwx2 = (content * centers**2).sum()
 
-    out._fTitle = b""
+    if histogram.index.name is None:
+        out._fTitle = b""
+    elif isinstance(histogram.index.name, bytes):
+        out._fTitle = histogram.index.name
+    else:
+        out._fTitle = histogram.index.name.encode("utf-8", "ignore")
 
     out._classname, content = _histtype(content)
 
