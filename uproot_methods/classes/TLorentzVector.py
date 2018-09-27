@@ -166,9 +166,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     def p3(self):
         out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
         if isinstance(self, awkward.JaggedArray):
-            out.__class__ = type("JaggedArray", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            out.__class__ = type("JaggedArrayMethods", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
         else:
-            out.__class__ = uproot_methods.classes.TVector3.ArrayMethods
+            out.__class__ = type("ObjectArrayMethods", (awkward.ObjectArray, uproot_methods.classes.TVector3.ArrayMethods), {})
         out["fX"] = self.x
         out["fY"] = self.y
         out["fZ"] = self.z
@@ -216,9 +216,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     def boostp3(self):
         out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
         if isinstance(self, awkward.JaggedArray):
-            out.__class__ = type("JaggedArray", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            out.__class__ = type("JaggedArrayMethods", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
         else:
-            out.__class__ = uproot_methods.classes.TVector3.ArrayMethods
+            out.__class__ = type("ObjectArrayMethods", (awkward.ObjectArray, uproot_methods.classes.TVector3.ArrayMethods), {})
         out["fX"] = self.x / self.t
         out["fY"] = self.y / self.t
         out["fZ"] = self.z / self.t
