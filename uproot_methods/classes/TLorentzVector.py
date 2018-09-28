@@ -550,6 +550,7 @@ class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
     @classmethod
     def from_p3(cls, p3, t):
         out = cls.__new__(cls)
+        out._initObjectArray(awkward.Table())
         out["fX"] = p3.x
         out["fY"] = p3.y
         out["fZ"] = p3.z
@@ -577,11 +578,11 @@ class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
-        x = pt * awkward.util.numpy.cos(phi),
-        y = pt * awkward.util.numpy.sin(phi),
+        x = pt * awkward.util.numpy.cos(phi)
+        y = pt * awkward.util.numpy.sin(phi)
         z = pt * awkward.util.numpy.sinh(eta)
         p3 = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
-        return cls.from_p3(p3, awkward.util.numpy.sqrt(x*x + y*y + z*z + m*m*awkward.util.numpy.sign(m)))
+        return cls.from_p3(p3, awkward.util.numpy.sqrt(x*x + y*y + z*z + mass*mass*awkward.util.numpy.sign(mass)))
 
     @property
     def x(self):
