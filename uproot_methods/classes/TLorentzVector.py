@@ -307,7 +307,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
             return self.mag
 
         else:
-            return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
+            return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
 
 class Methods(Common, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
