@@ -48,9 +48,8 @@ class Methods(uproot_methods.base.ROOTMethods):
 	def yerrorslow(self):
 		return self._fEYlow
 		
-	def pyplot(self, label="", showtitle=True, show=False, **kwargs):
-		import matplotlib.pyplot
-		pyplot = matplotlib.pyplot
+	def pyplot(self, showtitle=True, show=False, **kwargs):
+		import matplotlib.pyplot as pyplot
 		
 		_xerrs = [self.xerrorslow, self.xerrorshigh]
 		_yerrs = [self.yerrorslow, self.yerrorshigh]
@@ -58,7 +57,7 @@ class Methods(uproot_methods.base.ROOTMethods):
 		_xlabel = self.xlabel if self.xlabel is not None else ""
 		_ylabel = self.ylabel if self.ylabel is not None else ""
 		
-		pyplot.errorbar(self.xvalues, self.yvalues, xerr=_xerrs, yerr=_yerrs, label=label, **kwargs)
+		pyplot.errorbar(self.xvalues, self.yvalues, xerr=_xerrs, yerr=_yerrs, **kwargs)
 		pyplot.xlabel(_xlabel)
 		pyplot.ylabel(_ylabel)
 		if showtitle:

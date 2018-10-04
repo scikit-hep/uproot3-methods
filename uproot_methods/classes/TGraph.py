@@ -83,14 +83,13 @@ class Methods(uproot_methods.base.ROOTMethods):
 		else: 
 			return getattr(self._fHistogram._fYaxis, "_fTitle", None)
 
-	def pyplot(self, label="", showtitle=True, show=False, **kwargs):
-		import matplotlib.pyplot
-		pyplot = matplotlib.pyplot
+	def pyplot(self, showtitle=True, show=False, **kwargs):
+		import matplotlib.pyplot as pyplot
 		
 		_xlabel = self.xlabel if self.xlabel is not None else ""
 		_ylabel = self.ylabel if self.ylabel is not None else ""
 		
-		pyplot.plt(self.xvalues, self.yvalues, label=label, **kwargs)
+		pyplot.plt(self.xvalues, self.yvalues, **kwargs)
 		pyplot.xlabel(_xlabel)
 		pyplot.ylabel(_ylabel)
 		if showtitle:
