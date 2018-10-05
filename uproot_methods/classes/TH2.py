@@ -114,7 +114,6 @@ class Methods(uproot_methods.base.ROOTMethods):
         v = v.reshape(self.ynumbins + 2, self.xnumbins + 2)
         return v.tolist()
 
-    @property
     def numpy(self):
         xlow  = self.xlow
         xhigh = self.xhigh
@@ -205,89 +204,3 @@ class Methods(uproot_methods.base.ROOTMethods):
             return None
         else:
             return [str(x) for x in self._fYaxis._fLabels]
-
-    def show(self, width=80, minimum=None, maximum=None, stream=sys.stdout):
-        if minimum is None:
-            minimum = min(self.values)
-            if minimum < 0:
-                minimum *= 1.05
-            else:
-                minimum = 0
-
-        if maximum is None:
-            maximum = max(self) * 1.05
-
-        if maximum <= minimum:
-            average = (minimum + maximum) / 2.0
-            minimum = average - 0.5
-            maximum = average + 0.5
-
-        minimumtext = "{0:<.5g}".format(minimum)
-        maximumtext = "{0:<.5g}".format(maximum)
-
-        # Determine the necessary formatting
-        allvals = numpy.array(self.allvalues)
-        intervalswidth = 0
-        valueswidth    = 0
-        all_intervals  = []
-        all_values     = []
-        for y in allvals:
-            if self.xlabels is None:
-                intervals = ["[{0:<.5g}, {1:<.5g})".format(l, h) for l, h in [self.yinterval(i) for i in range(len(y))]]
-                intervals[-1] = intervals[-1][:-1] + "]"   # last interval is closed on top edge
-            else:
-                intervals = ["(underflow)"] + [self.xlabels[i] if i < len(self.xlabels) else self.xinterval(i + 1) for i in range(self.xnumbins)] + ["(overflow)"]
-            tmp_intervalswidth = max(len(x) for x in intervals)
-            if tmp_intervalswidth > intervalswidth: intervalswidth = tmp_intervalswidth
-            values = ["{0:<.5g}".format(float(x)) for x in y]
-            tmp_valueswidth = max(len(x) for x in values)
-            if tmp_valueswidth > valueswidth: valueswidth = tmp_valueswidth
-
-            all_intervals.append(intervals)
-            all_values.append(values)
-
-        plotwidth = max(len(minimumtext) + len(maximumtext), width - (intervalswidth + 1 + valueswidth + 1 + 2))
-        scale = minimumtext + " "*(plotwidth + 2 - len(minimumtext) - len(maximumtext)) + maximumtext
-        norm  = float(plotwidth) / float(maximum - minimum)
-        zero  = int(round((0.0 - minimum)*norm))
-        line  = numpy.empty(plotwidth, dtype=numpy.uint8)
-
-        formatter = "{0:<%s} {1:<%s} |{2}|" % (intervalswidth, valueswidth)
-        line[:] = ord("-")
-        if minimum != 0 and 0 <= zero < plotwidth:
-            line[zero] = ord("+")
-
-        capstone  = " " * (intervalswidth + 1 + valueswidth + 1) + "+" + str(line.tostring().decode("ascii")) + "+"
-        out = [" "*(intervalswidth + valueswidth + 2) + scale]
-        out.append(capstone)
-
-        # Make the drawing
-        for j,y in enumerate(allvals):
-            values = all_values[j]
-            y_interval = self.interval(j,axis='y')
-            y_int_text = " y : [{0:<.5g}, {1:<.5g})".format(y_interval[0],y_interval[1])
-            if j==len(allvals)-1:
-                y_int_text = y_int_text[:-1]+']'
-            out.append( y_int_text )
-
-            for interval,value,x in zip(all_intervals[j], values, y):
-                line[:] = ord(" ")
-
-                pos = int(round((x - minimum)*norm))
-                if x < 0:
-                    line[pos:zero] = ord("*")
-                else:
-                    line[zero:pos] = ord("*")
-
-                if minimum != 0 and 0 <= zero < plotwidth:
-                    line[zero] = ord("|")
-
-                out.append(formatter.format(interval, value, str(line.tostring().decode("ascii"))))
-
-        out.append(capstone)
-        out = "\n".join(out)
-        if stream is None:
-            return out
-        else:
-            stream.write(out)
-            stream.write("\n")
