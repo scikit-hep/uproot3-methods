@@ -48,7 +48,7 @@ class Methods(uproot_methods.base.ROOTMethods):
 	def yerrorslow(self):
 		return self._fEYlow
 		
-	def pyplot(self, showtitle=True, show=False, **kwargs):
+	def matplotlib(self, showtitle=True, show=False, **kwargs):
 		import matplotlib.pyplot as pyplot
 		
 		_xerrs = [self.xerrorslow, self.xerrorshigh]

@@ -40,7 +40,7 @@ class Methods(uproot_methods.base.ROOTMethods):
 	def yerrors(self):
 		return self._fEY
 		
-	def pyplot(self, showtitle=True, show=False, **kwargs):
+	def matplotlib(self, showtitle=True, show=False, **kwargs):
 		import matplotlib.pyplot as pyplot
 		
 		_xlabel = self.xlabel if self.xlabel is not None else ""
