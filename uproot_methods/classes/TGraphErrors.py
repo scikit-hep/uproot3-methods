@@ -43,15 +43,18 @@ class Methods(uproot_methods.base.ROOTMethods):
 	def matplotlib(self, showtitle=True, show=False, **kwargs):
 		import matplotlib.pyplot as pyplot
 		
-		_xlabel = self.xlabel if self.xlabel is not None else ""
-		_ylabel = self.ylabel if self.ylabel is not None else ""
+		_xlabel = _decode(self.xlabel if self.xlabel is not None else "")
+		_ylabel = _decode(self.ylabel if self.ylabel is not None else "")
 		
 		pyplot.errorbar(self.xvalues, self.yvalues, xerr=self.xerrors, yerr=self.yerrors, **kwargs)
 		pyplot.xlabel(_xlabel)
 		pyplot.ylabel(_ylabel)
 		if showtitle:
-			_title = self.title.decode() if isinstance(self.title, bytes) else self.title
+			_title = _decode(self.title)
 			pyplot.title(_title)
 			
 		if show:
 			pyplot.show()
+			
+def _decode(sequence):
+	return sequence.decode() if isinstance(sequence, bytes) else sequence
