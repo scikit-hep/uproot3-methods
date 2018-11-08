@@ -2,21 +2,21 @@
 
 # Copyright (c) 2018, DIANA-HEP
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -227,7 +227,7 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
 
     def cross(self, other):
         x, y, z = self._cross(other)
-        return self.TVector3(x, y, z)
+        return TVector3(x, y, z)
 
     @property
     def theta(self):
@@ -235,10 +235,10 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)
-        return self.TVector3(x, y, z)
+        return TVector3(x, y, z)
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
-        return self.TVector3(x, y, z)
+        return TVector3(x, y, z)
 
 class TVector3Array(ArrayMethods, awkward.ObjectArray):
     def __init__(self, x, y, z):
