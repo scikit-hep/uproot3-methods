@@ -29,6 +29,34 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import awkward
+import awkward.util
+
+def _normalize_arrays(arrays):
+    arrays = list(arrays)
+    starts, stops = None, None
+    for i in range(len(arrays)):
+        if starts is None and isinstance(arrays[i], awkward.JaggedArray):
+            starts, stops = arrays[i].starts, arrays[i].stops
+        arrays[i] = awkward.util.toarray(arrays[i], awkward.util.numpy.float64)
+
+    if starts is None:
+        return arrays
+
+    for i in range(len(arrays)):
+        if not isinstance(arrays[i], awkward.JaggedArray) or not (awkward.util.numpy.array_equal(starts, arrays[i].starts) and awkward.util.numpy.array_equal(stops, arrays[i].stops)):
+            content = awkward.util.numpy.zeros(stops.max(), dtype=awkward.util.numpy.float64)
+            arrays[i] = awkward.JaggedArray(starts, stops, content) + arrays[i]    # invoke jagged broadcasting to align arrays
+
+    return arrays
+
+def _unwrap_jagged(ArrayMethods, arrays):
+    if not isinstance(arrays[0], awkward.JaggedArray):
+        return lambda x: x, arrays
+    else:
+        JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
+        starts, stops = arrays[0].starts, arrays[0].stops
+        wrap, arrays = _unwrap_jagged(ArrayMethods, [x.content for x in arrays])
+        return lambda x: JaggedArrayMethods(starts, stops, wrap(x)), arrays
 
 class ROOTMethods(awkward.Methods):
     _arraymethods = None

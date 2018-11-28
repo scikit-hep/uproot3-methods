@@ -545,7 +545,7 @@ class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def origin_like(cls, array):
-        return cls.origin(array.shape, array.dtype)
+        return array * 0.0
 
     @classmethod
     def from_p3(cls, p3, t):
@@ -578,11 +578,12 @@ class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
+        wrap, (pt, eta, phi, mass) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((pt, eta, phi, mass)))
         x = pt * awkward.util.numpy.cos(phi)
         y = pt * awkward.util.numpy.sin(phi)
         z = pt * awkward.util.numpy.sinh(eta)
         p3 = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
-        return cls.from_p3(p3, awkward.util.numpy.sqrt(x*x + y*y + z*z + mass*mass*awkward.util.numpy.sign(mass)))
+        return wrap(cls.from_p3(p3, awkward.util.numpy.sqrt(x*x + y*y + z*z + mass*mass*awkward.util.numpy.sign(mass))))
 
     @property
     def x(self):
