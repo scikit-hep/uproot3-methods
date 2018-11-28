@@ -151,7 +151,7 @@ class TVector2Array(ArrayMethods, awkward.ObjectArray):
         return wrap(cls(x, y))
 
     @classmethod
-    def from_circular(cls, rho, phi):
+    def from_polar(cls, rho, phi):
         wrap, (rho, phi) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi)))
         return wrap(cls(rho * awkward.util.numpy.cos(phi),
                         rho * awkward.util.numpy.sin(phi)))
@@ -182,7 +182,7 @@ class TVector2(Methods):
         return cls(0.0, 0.0)
 
     @classmethod
-    def from_circular(cls, rho, phi):
+    def from_polar(cls, rho, phi):
         return cls(rho * math.cos(phi),
                    rho * math.sin(phi))
 
