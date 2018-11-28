@@ -59,6 +59,12 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
     def y(self):
         return self["fY"]
 
+    def sum(self):
+        if isinstance(self, awkward.JaggedArray):
+            return TVector2Array.from_cartesian(self.x.sum(), self.y.sum())
+        else:
+            return TVector2(self.x.sum(), self.y.sum())
+
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if method != "__call__":
             return NotImplemented

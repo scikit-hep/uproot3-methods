@@ -276,9 +276,15 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     def islightlike(self, tolerance=1e-10):
         return awkward.util.numpy.absolute(self.mag2) < tolerance
 
+    def sum(self):
+        if isinstance(self, awkward.JaggedArray):
+            return TLorentzVectorArray.from_cartesian(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
+        else:
+            return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
+
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if method != "__call__":
-            raise NotImplemented
+            return NotImplemented
 
         inputs = list(inputs)
         for i in range(len(inputs)):
