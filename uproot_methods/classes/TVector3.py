@@ -180,7 +180,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
             return self.mag
 
         else:
-            return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
+            return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
 
 class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
@@ -257,19 +257,26 @@ class TVector3Array(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def origin_like(cls, array):
-        return cls.origin(array.shape, array.dtype)
+        return array * 0.0
+
+    @classmethod
+    def from_cartesian(cls, x, y, z):
+        wrap, (x, y, z) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z)))
+        return wrap(cls(x, y, z))
 
     @classmethod
     def from_spherical(cls, r, theta, phi):
-        return cls(r * awkward.util.numpy.sin(theta) * awkward.util.numpy.cos(phi),
-                   r * awkward.util.numpy.sin(theta) * awkward.util.numpy.sin(phi),
-                   r * awkward.util.numpy.cos(theta))
+        wrap, (r, theta, phi) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((r, theta, phi)))
+        return wrap(cls(r * awkward.util.numpy.sin(theta) * awkward.util.numpy.cos(phi),
+                        r * awkward.util.numpy.sin(theta) * awkward.util.numpy.sin(phi),
+                        r * awkward.util.numpy.cos(theta)))
 
     @classmethod
-    def from_cylindrical(cls, r, rho, phi, z):
-        return cls(rho * awkward.util.numpy.cos(phi),
-                   rho * awkward.util.numpy.sin(phi),
-                   z)
+    def from_cylindrical(cls, rho, phi, z):
+        wrap, (rho, phi, z) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi, z)))
+        return wrap(cls(rho * awkward.util.numpy.cos(phi),
+                        rho * awkward.util.numpy.sin(phi),
+                        z))
 
     @property
     def x(self):

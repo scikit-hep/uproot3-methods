@@ -88,7 +88,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
             return self.mag
 
         else:
-            return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
+            return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
 
 class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
@@ -143,12 +143,18 @@ class TVector2Array(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def origin_like(cls, array):
-        return cls.origin(array.shape, array.dtype)
+        return array * 0.0
 
     @classmethod
-    def from_circular(cls, rho, phi):
-        return cls(rho * awkward.util.numpy.cos(phi),
-                   rho * awkward.util.numpy.sin(phi))
+    def from_cartesian(cls, x, y):
+        wrap, (x, y) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y)))
+        return wrap(cls(x, y))
+
+    @classmethod
+    def from_polar(cls, rho, phi):
+        wrap, (rho, phi) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi)))
+        return wrap(cls(rho * awkward.util.numpy.cos(phi),
+                        rho * awkward.util.numpy.sin(phi)))
 
     @property
     def x(self):
@@ -176,7 +182,7 @@ class TVector2(Methods):
         return cls(0.0, 0.0)
 
     @classmethod
-    def from_circular(cls, rho, phi):
+    def from_polar(cls, rho, phi):
         return cls(rho * math.cos(phi),
                    rho * math.sin(phi))
 
