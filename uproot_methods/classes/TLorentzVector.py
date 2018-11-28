@@ -549,32 +549,36 @@ class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def from_p3(cls, p3, t):
-        out = cls.__new__(cls)
-        out._initObjectArray(awkward.Table())
-        out["fX"] = p3.x
-        out["fY"] = p3.y
-        out["fZ"] = p3.z
-        out["fE"] = t
-        return out
+        wrap, (x, y, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((p3.x, p3.y, p3.z, t)))
+        return wrap(cls(x, y, z, t))
+
+    @classmethod
+    def from_cartesian(cls, x, y, z, t):
+        wrap, (x, y, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z, t)))
+        return wrap(cls(x, y, z, t))
 
     @classmethod
     def from_spherical(cls, r, theta, phi, t):
-        return cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t)
+        wrap, (r, theta, phi, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((r, theta, phi, t)))
+        return wrap(cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t))
 
     @classmethod
     def from_cylindrical(cls, rho, phi, z, t):
-        return cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t)
+        wrap, (rho, phi, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi, z, t)))
+        return wrap(cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t))
 
     @classmethod
     def from_xyzm(cls, x, y, z, m):
-        return cls(x, y, z, awkward.util.numpy.sqrt(x*x + y*y + z*z + m*m*awkward.util.numpy.sign(m)))
+        wrap, (x, y, z, m) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z, m)))
+        return wrap(cls(x, y, z, awkward.util.numpy.sqrt(x*x + y*y + z*z + m*m*awkward.util.numpy.sign(m))))
 
     @classmethod
     def from_ptetaphi(cls, pt, eta, phi, energy):
-        return cls(pt * awkward.util.numpy.cos(phi),
-                   pt * awkward.util.numpy.sin(phi),
-                   pt * awkward.util.numpy.sinh(eta),
-                   energy)
+        wrap, (pt, eta, phi, energy) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((pt, eta, phi, energy)))
+        return wrap(cls(pt * awkward.util.numpy.cos(phi),
+                        pt * awkward.util.numpy.sin(phi),
+                        pt * awkward.util.numpy.sinh(eta),
+                        energy))
 
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
