@@ -267,22 +267,22 @@ class TVector3Array(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def from_cartesian(cls, x, y, z):
-        wrap, (x, y, z) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z)))
-        return wrap(cls(x, y, z))
+        wrapmethods, wrap, (x, y, z) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z)))
+        return wrapmethods(cls(x, y, z))
 
     @classmethod
     def from_spherical(cls, r, theta, phi):
-        wrap, (r, theta, phi) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((r, theta, phi)))
-        return wrap(cls(r * awkward.util.numpy.sin(theta) * awkward.util.numpy.cos(phi),
-                        r * awkward.util.numpy.sin(theta) * awkward.util.numpy.sin(phi),
-                        r * awkward.util.numpy.cos(theta)))
+        wrapmethods, wrap, (r, theta, phi) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((r, theta, phi)))
+        return wrapmethods(cls(r * awkward.util.numpy.sin(theta) * awkward.util.numpy.cos(phi),
+                               r * awkward.util.numpy.sin(theta) * awkward.util.numpy.sin(phi),
+                               r * awkward.util.numpy.cos(theta)))
 
     @classmethod
     def from_cylindrical(cls, rho, phi, z):
-        wrap, (rho, phi, z) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi, z)))
-        return wrap(cls(rho * awkward.util.numpy.cos(phi),
-                        rho * awkward.util.numpy.sin(phi),
-                        z))
+        wrapmethods, wrap, (rho, phi, z) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi, z)))
+        return wrapmethods(cls(rho * awkward.util.numpy.cos(phi),
+                               rho * awkward.util.numpy.sin(phi),
+                               z))
 
     @property
     def x(self):

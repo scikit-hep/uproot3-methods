@@ -42,7 +42,7 @@ class Test(unittest.TestCase):
 
     def test_issue10(self):
         p4 = TLorentzVectorArray.from_ptetaphim(awkward.JaggedArray.fromiter([[1.0]]), awkward.JaggedArray.fromiter([[1.0]]), awkward.JaggedArray.fromiter([[1.0]]), awkward.JaggedArray.fromiter([[1.0]]))
-        assert p4.mass.tolist() == [[0.9999999999999999]]
+        assert p4.mass.tolist() == [[1.0]]
         assert p4[0].mass.tolist() == [0.9999999999999999]
         assert p4[0][0].mass == 0.9999999999999999
         assert type(p4.mass) is awkward.JaggedArray
