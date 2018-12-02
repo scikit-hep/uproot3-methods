@@ -33,7 +33,7 @@ addons:
       - python-setuptools
 
 script:
-  python setup.py test
+  python setup.py pytest
 
 install:
   - pip install --upgrade setuptools_scm
@@ -41,6 +41,7 @@ install:
   - python -c 'import numpy; print(numpy.__version__)'
   - pip install awkward
   - python -c 'import awkward; print(awkward.__version__)'
+  - pip install pytest pytest-runner
 
 notifications:
   slack: scikit-hep:b6cgBXwccPoaCNLn5VKFJFVy
