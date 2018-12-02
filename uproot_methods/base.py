@@ -58,6 +58,14 @@ def _unwrap_jagged(ArrayMethods, arrays):
         wrap, arrays = _unwrap_jagged(ArrayMethods, [x.content for x in arrays])
         return lambda x: JaggedArrayMethods(starts, stops, wrap(x)), arrays
 
+def memo(function):
+    memoname = "_memo_" + function.__name__
+    def memofunction(self):
+        if not hasattr(self, memoname):
+            setattr(self, memoname, function(self))
+        return getattr(self, memoname)
+    return memofunction
+
 class ROOTMethods(awkward.Methods):
     _arraymethods = None
 

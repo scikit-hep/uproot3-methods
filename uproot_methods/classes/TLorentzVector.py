@@ -39,18 +39,6 @@ import uproot_methods.base
 import uproot_methods.common.TVector
 import uproot_methods.classes.TVector3
 
-# TODO: put into utility submodule
-# Inheirit from read-only property?
-class memoized(object):
-    def __init__(self, fn):
-        self._fn = fn
-        self._name = "_memoized_" + fn.__name__
-
-    def __call__(self, fn_classinstance):
-        if getattr(fn_classinstance, self._name, None) is None:
-            setattr(fn_classinstance, self._name, self._fn(fn_classinstance))
-        return getattr(fn_classinstance, self._name)
-
 class Common(object):
     @property
     def E(self):
@@ -88,7 +76,7 @@ class Common(object):
         return self.p3.rho2
 
     @property
-    @memoized
+    @uproot_methods.base.memo
     def pt(self):
         return self.p3.rho
 
@@ -105,7 +93,7 @@ class Common(object):
         return self.mag2
 
     @property
-    @memoized
+    @uproot_methods.base.memo
     def mass(self):
         return self.mag
 
@@ -114,7 +102,7 @@ class Common(object):
         return self.energy**2 - self.z**2
         
     @property
-    @memoized
+    @uproot_methods.base.memo
     def phi(self):
         return self.p3.phi
 
@@ -216,9 +204,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         return awkward.util.numpy.sqrt(awkward.util.numpy.absolute(mt2)) * sign
 
     @property
-    @memoized
+    @uproot_methods.base.memo
     def eta(self):
-        return awkward.util.numpy.arcsinh(self.z / self.p3.rho)
+        return awkward.util.numpy.arcsinh(self.z / awkward.util.numpy.sqrt(self.x**2 + self.y**2))
 
     @property
     def rapidity(self):
@@ -396,7 +384,7 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
 
     @property
     def eta(self):
-        return math.asinh(self.z / self.p3.rho)
+        return math.asinh(self.z / math.sqrt(self.x**2 + self.y**2))
 
     @property
     def rapidity(self):
