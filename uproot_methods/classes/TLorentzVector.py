@@ -39,6 +39,18 @@ import uproot_methods.base
 import uproot_methods.common.TVector
 import uproot_methods.classes.TVector3
 
+# TODO: put into utility submodule
+# Inheirit from read-only property?
+class memoized(object):
+    def __init__(self, fn):
+        self._fn = fn
+        self._name = "_memoized_" + fn.__name__
+
+    def __call__(self, fn_classinstance):
+        if getattr(fn_classinstance, self._name, None) is None:
+            setattr(fn_classinstance, self._name, self._fn(fn_classinstance))
+        return getattr(fn_classinstance, self._name)
+
 class Common(object):
     @property
     def E(self):
@@ -76,6 +88,7 @@ class Common(object):
         return self.p3.rho2
 
     @property
+    @memoized
     def pt(self):
         return self.p3.rho
 
@@ -92,6 +105,7 @@ class Common(object):
         return self.mag2
 
     @property
+    @memoized
     def mass(self):
         return self.mag
 
@@ -100,6 +114,7 @@ class Common(object):
         return self.energy**2 - self.z**2
         
     @property
+    @memoized
     def phi(self):
         return self.p3.phi
 
@@ -201,6 +216,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         return awkward.util.numpy.sqrt(awkward.util.numpy.absolute(mt2)) * sign
 
     @property
+    @memoized
     def eta(self):
         return awkward.util.numpy.arcsinh(self.z / self.p3.rho)
 
