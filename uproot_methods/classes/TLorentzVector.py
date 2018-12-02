@@ -202,7 +202,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
     @property
     def eta(self):
-        return -awkward.util.numpy.log((1.0 - awkward.util.numpy.cos(self.theta)) / (1.0 + awkward.util.numpy.cos(self.theta))) / 2.0
+        return awkward.util.numpy.arcsinh(self.z / self.p3.rho)
 
     @property
     def rapidity(self):
@@ -374,7 +374,7 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
 
     @property
     def eta(self):
-        return -math.log((1.0 - math.cos(self.theta)) / (1.0 + math.cos(self.theta)))/2.0
+        return math.asinh(self.z / self.p3.rho)
 
     @property
     def rapidity(self):
