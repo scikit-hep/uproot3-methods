@@ -153,14 +153,14 @@ class TVector2Array(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def from_cartesian(cls, x, y):
-        wrap, (x, y) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y)))
-        return wrap(cls(x, y))
+        wrapmethods, wrap, (x, y) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y)))
+        return wrapmethods(cls(x, y))
 
     @classmethod
     def from_polar(cls, rho, phi):
-        wrap, (rho, phi) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi)))
-        return wrap(cls(rho * awkward.util.numpy.cos(phi),
-                        rho * awkward.util.numpy.sin(phi)))
+        wrapmethods, wrap, (rho, phi) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi)))
+        return wrapmethods(cls(rho * awkward.util.numpy.cos(phi),
+                               rho * awkward.util.numpy.sin(phi)))
 
     @property
     def x(self):

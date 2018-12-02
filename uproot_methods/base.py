@@ -51,12 +51,12 @@ def _normalize_arrays(arrays):
 
 def _unwrap_jagged(ArrayMethods, arrays):
     if not isinstance(arrays[0], awkward.JaggedArray):
-        return lambda x: x, arrays
+        return lambda x: x, lambda x: x, arrays
     else:
         JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
         starts, stops = arrays[0].starts, arrays[0].stops
-        wrap, arrays = _unwrap_jagged(ArrayMethods, [x.content for x in arrays])
-        return lambda x: JaggedArrayMethods(starts, stops, wrap(x)), arrays
+        wrapmethods, wrap, arrays = _unwrap_jagged(ArrayMethods, [x.content for x in arrays])
+        return lambda x: JaggedArrayMethods(starts, stops, wrapmethods(x)), lambda x: awkward.JaggedArray(starts, stops, wrap(x)), arrays
 
 def memo(function):
     memoname = "_memo_" + function.__name__
