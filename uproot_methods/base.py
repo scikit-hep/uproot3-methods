@@ -28,6 +28,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
+
 import awkward
 import awkward.util
 
@@ -50,11 +55,29 @@ def _normalize_arrays(arrays):
     return arrays
 
 def _unwrap_jagged(ArrayMethods, arrays):
-    if not isinstance(arrays[0], awkward.JaggedArray):
+    length = None
+    for i in range(len(arrays)):
+        if isinstance(arrays[i], Iterable):
+            if length is None:
+                length = len(arrays[i])
+                break
+
+    if length is None:
+        raise TypeError("cannot construct an array if all arguments are scalar")
+
+    jagged = None
+    arrays = list(arrays)
+    for i in range(len(arrays)):
+        if not isinstance(arrays[i], Iterable):
+            arrays[i] = awkward.util.numpy.full(length, arrays[i])
+        elif isinstance(arrays[i], awkward.JaggedArray):
+            jagged = arrays[i]
+
+    if jagged is None:
         return lambda x: x, lambda x: x, arrays
     else:
         JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
-        starts, stops = arrays[0].starts, arrays[0].stops
+        starts, stops = jagged.starts, jagged.stops
         wrapmethods, wrap, arrays = _unwrap_jagged(ArrayMethods, [x.content for x in arrays])
         return lambda x: JaggedArrayMethods(starts, stops, wrapmethods(x)), lambda x: awkward.JaggedArray(starts, stops, wrap(x)), arrays
 
