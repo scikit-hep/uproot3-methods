@@ -37,11 +37,24 @@ import awkward
 import awkward.util
 
 def _normalize_arrays(arrays):
+    length = None
+    for i in range(len(arrays)):
+        if isinstance(arrays[i], Iterable):
+            if length is None:
+                length = len(arrays[i])
+                break
+    if length is None:
+        raise TypeError("cannot construct an array if all arguments are scalar")
+
     arrays = list(arrays)
     starts, stops = None, None
     for i in range(len(arrays)):
         if starts is None and isinstance(arrays[i], awkward.JaggedArray):
             starts, stops = arrays[i].starts, arrays[i].stops
+
+        if not isinstance(arrays[i], Iterable):
+            arrays[i] = awkward.util.numpy.full(length, arrays[i])
+
         arrays[i] = awkward.util.toarray(arrays[i], awkward.util.numpy.float64)
 
     if starts is None:
@@ -55,29 +68,11 @@ def _normalize_arrays(arrays):
     return arrays
 
 def _unwrap_jagged(ArrayMethods, arrays):
-    length = None
-    for i in range(len(arrays)):
-        if isinstance(arrays[i], Iterable):
-            if length is None:
-                length = len(arrays[i])
-                break
-
-    if length is None:
-        raise TypeError("cannot construct an array if all arguments are scalar")
-
-    jagged = None
-    arrays = list(arrays)
-    for i in range(len(arrays)):
-        if not isinstance(arrays[i], Iterable):
-            arrays[i] = awkward.util.numpy.full(length, arrays[i])
-        elif isinstance(arrays[i], awkward.JaggedArray):
-            jagged = arrays[i]
-
-    if jagged is None:
+    if not isinstance(arrays[0], awkward.JaggedArray):
         return lambda x: x, lambda x: x, arrays
     else:
         JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
-        starts, stops = jagged.starts, jagged.stops
+        starts, stops = arrays[0].starts, arrays[0].stops
         wrapmethods, wrap, arrays = _unwrap_jagged(ArrayMethods, [x.content for x in arrays])
         return lambda x: JaggedArrayMethods(starts, stops, wrapmethods(x)), lambda x: awkward.JaggedArray(starts, stops, wrap(x)), arrays
 
