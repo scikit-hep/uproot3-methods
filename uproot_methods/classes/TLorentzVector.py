@@ -76,11 +76,6 @@ class Common(object):
         return self.p3.rho2
 
     @property
-    @uproot_methods.base.memo
-    def pt(self):
-        return self.p3.rho
-
-    @property
     def Et(self):
         return self.energy * self.pt / self.p
 
@@ -93,18 +88,8 @@ class Common(object):
         return self.mag2
 
     @property
-    @uproot_methods.base.memo
-    def mass(self):
-        return self.mag
-
-    @property
     def mt2(self):
         return self.energy**2 - self.z**2
-        
-    @property
-    @uproot_methods.base.memo
-    def phi(self):
-        return self.p3.phi
 
     @property
     def theta(self):
@@ -194,6 +179,26 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         return self["fE"]
 
     @property
+    @uproot_methods.base.memo
+    def pt(self):
+        return awkward.util.numpy.sqrt(self.pt2)
+
+    @property
+    @uproot_methods.base.memo
+    def eta(self):
+        return awkward.util.numpy.arcsinh(self.z / awkward.util.numpy.sqrt(self.x**2 + self.y**2))
+
+    @property
+    @uproot_methods.base.memo
+    def phi(self):
+        return self.p3.phi
+
+    @property
+    @uproot_methods.base.memo
+    def mass(self):
+        return awkward.util.numpy.sqrt(self.mag2)
+
+    @property
     def mag(self):
         return awkward.util.numpy.sqrt(self.mag2)
 
@@ -202,11 +207,6 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         mt2 = self.mt2
         sign = awkward.util.numpy.sign(mt2)
         return awkward.util.numpy.sqrt(awkward.util.numpy.absolute(mt2)) * sign
-
-    @property
-    @uproot_methods.base.memo
-    def eta(self):
-        return awkward.util.numpy.arcsinh(self.z / awkward.util.numpy.sqrt(self.x**2 + self.y**2))
 
     @property
     def rapidity(self):
@@ -371,6 +371,22 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
         return TLorentzVector(operator(self.x), operator(self.y), operator(self.z), operator(self.t))
 
     @property
+    def pt(self):
+        return math.sqrt(self.pt2)
+
+    @property
+    def eta(self):
+        return math.asinh(self.z / math.sqrt(self.x**2 + self.y**2))
+
+    @property
+    def phi(self):
+        return self.p3.phi
+
+    @property
+    def mass(self):
+        return math.sqrt(self.mag2)
+
+    @property
     def mag(self):
         return math.sqrt(self.mag2)
 
@@ -381,10 +397,6 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
             return math.sqrt(out)
         else:
             return -math.sqrt(out)
-
-    @property
-    def eta(self):
-        return math.asinh(self.z / math.sqrt(self.x**2 + self.y**2))
 
     @property
     def rapidity(self):
@@ -559,54 +571,54 @@ class TLorentzVectorArray(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def from_p3(cls, p3, t):
-        wrapmethods, wrap, (x, y, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((p3.x, p3.y, p3.z, t)))
-        return wrapmethods(cls(x, y, z, t))
+        wrap, (x, y, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((p3.x, p3.y, p3.z, t)))
+        return wrap(cls(x, y, z, t))
 
     @classmethod
     def from_cartesian(cls, x, y, z, t):
-        wrapmethods, wrap, (x, y, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z, t)))
-        return wrapmethods(cls(x, y, z, t))
+        wrap, (x, y, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z, t)))
+        return wrap(cls(x, y, z, t))
 
     @classmethod
     def from_spherical(cls, r, theta, phi, t):
-        wrapmethods, wrap, (r, theta, phi, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((r, theta, phi, t)))
-        return wrapmethods(cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t))
+        wrap, (r, theta, phi, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((r, theta, phi, t)))
+        return wrap(cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t))
 
     @classmethod
     def from_cylindrical(cls, rho, phi, z, t):
-        wrapmethods, wrap, (rho, phi, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi, z, t)))
-        return wrapmethods(cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t))
+        wrap, (rho, phi, z, t) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi, z, t)))
+        return wrap(cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t))
 
     @classmethod
     def from_xyzm(cls, x, y, z, m):
-        wrapmethods, wrap, (x, y, z, m) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z, m)))
-        return wrapmethods(cls(x, y, z, awkward.util.numpy.sqrt(x*x + y*y + z*z + m*m*awkward.util.numpy.sign(m))))
+        wrap, (x, y, z, m) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z, m)))
+        return wrap(cls(x, y, z, awkward.util.numpy.sqrt(x*x + y*y + z*z + m*m*awkward.util.numpy.sign(m))))
 
     @classmethod
     def from_ptetaphi(cls, pt, eta, phi, energy):
-        wrapmethods, wrap, (pt, eta, phi, energy) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((pt, eta, phi, energy)))
-        out = wrapmethods(cls(pt * awkward.util.numpy.cos(phi),
-                              pt * awkward.util.numpy.sin(phi),
-                              pt * awkward.util.numpy.sinh(eta),
-                              energy))
-        out._memo_pt = wrap(pt)
-        out._memo_eta = wrap(eta)
-        out._memo_phi = wrap(phi)
-        return out
+        wrap, (pt, eta, phi, energy) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((pt, eta, phi, energy)))
+        out = cls(pt * awkward.util.numpy.cos(phi),
+                  pt * awkward.util.numpy.sin(phi),
+                  pt * awkward.util.numpy.sinh(eta),
+                  energy)
+        out._memo_pt = pt
+        out._memo_eta = eta
+        out._memo_phi = phi
+        return wrap(out)
 
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
-        wrapmethods, wrap, (pt, eta, phi, mass) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((pt, eta, phi, mass)))
+        wrap, (pt, eta, phi, mass) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((pt, eta, phi, mass)))
         x = pt * awkward.util.numpy.cos(phi)
         y = pt * awkward.util.numpy.sin(phi)
         z = pt * awkward.util.numpy.sinh(eta)
         p3 = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
-        out = wrapmethods(cls.from_p3(p3, awkward.util.numpy.sqrt(x*x + y*y + z*z + mass*mass*awkward.util.numpy.sign(mass))))
-        out._memo_pt = wrap(pt)
-        out._memo_eta = wrap(eta)
-        out._memo_phi = wrap(phi)
-        out._memo_mass = wrap(mass)
-        return out
+        out = cls.from_p3(p3, awkward.util.numpy.sqrt(x*x + y*y + z*z + mass*mass*awkward.util.numpy.sign(mass)))
+        out._memo_pt = pt
+        out._memo_eta = eta
+        out._memo_phi = phi
+        out._memo_mass = mass
+        return wrap(out)
 
     @property
     def x(self):

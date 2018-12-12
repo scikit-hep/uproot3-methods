@@ -69,19 +69,23 @@ def _normalize_arrays(arrays):
 
 def _unwrap_jagged(ArrayMethods, arrays):
     if not isinstance(arrays[0], awkward.JaggedArray):
-        return lambda x: x, lambda x: x, arrays
+        return lambda x: x, arrays
     else:
-        JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
+        if ArrayMethods is None:
+            cls = awkward.JaggedArray
+        else:
+            cls = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
         starts, stops = arrays[0].starts, arrays[0].stops
-        wrapmethods, wrap, arrays = _unwrap_jagged(ArrayMethods, [x.content for x in arrays])
-        return lambda x: JaggedArrayMethods(starts, stops, wrapmethods(x)), lambda x: awkward.JaggedArray(starts, stops, wrap(x)), arrays
+        wrap, arrays = _unwrap_jagged(ArrayMethods, [x.content for x in arrays])
+        return lambda x: cls(starts, stops, wrap(x)), arrays
 
 def memo(function):
     memoname = "_memo_" + function.__name__
-    def memofunction(self):
-        if not hasattr(self, memoname):
-            setattr(self, memoname, function(self))
-        return getattr(self, memoname)
+    def memofunction(array):
+        wrap, (array,) = _unwrap_jagged(None, (array,))
+        if not hasattr(array, memoname):
+            setattr(array, memoname, function(array))
+        return wrap(getattr(array, memoname))
     return memofunction
 
 class ROOTMethods(awkward.Methods):
