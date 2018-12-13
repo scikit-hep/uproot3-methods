@@ -72,6 +72,23 @@ class Methods(uproot_methods.base.ROOTMethods):
         return self[-1]
 
     @property
+    def bins(self):
+        axis = self._fXaxis
+        if hasattr(axis, "_fXbins"):
+            return numpy.array(axis._fXbins)
+        else:
+            return numpy.linspace(axis._fXmin, axis._fXmax, axis._fNbins + 1)
+
+    @property
+    def allbins(self):
+        axis = self._fXaxis
+        v = numpy.empty(axis._fNbins + 3)
+        v[0] = -numpy.inf
+        v[-1] = numpy.inf
+        v[1:-1] = self.bins
+        return v
+
+    @property
     def values(self):
         return self[1:-1]
 
