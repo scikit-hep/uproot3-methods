@@ -73,19 +73,19 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def values(self):
-        return self[1:-1]
+        return numpy.array(self[1:-1])
 
     @property
     def allvalues(self):
-        return self[:]
+        return numpy.array(self)
 
     @property
     def variances(self):
-        return self._fSumw2[1:-1]
+        return numpy.array(self._fSumw2[1:-1])
 
     @property
     def allvariances(self):
-        return self._fSumw2[:]
+        return numpy.array(self._fSumw2)
 
     def interval(self, index):
         if index < 0:
