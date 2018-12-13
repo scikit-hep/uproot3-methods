@@ -30,6 +30,7 @@
 
 import importlib
 
+# uses numpy, not awkward.util.numpy, because it operates on TFile data, not TTree data
 import numpy
         
 def towriteable(obj):

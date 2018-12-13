@@ -32,6 +32,7 @@ import numbers
 import math
 import sys
 
+# uses numpy, not awkward.util.numpy, because it operates on TFile data, not TTree data
 import numpy
 
 import uproot_methods.base
