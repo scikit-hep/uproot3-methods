@@ -359,6 +359,7 @@ def from_numpy(histogram):
     valuesarray[-1] = 0
 
     out.extend(valuesarray)
+    out._fSumw2 = valuesarray ** 2
 
     return out
 
