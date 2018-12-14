@@ -46,7 +46,7 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def name(self):
-        return self._fName
+        return getattr(self._fName, None)
 
     @property
     def title(self):
