@@ -43,7 +43,6 @@ class Test(unittest.TestCase):
 
         h = from_numpy((values, edges))
 
-        assert h.name
         assert h.numbins == 2
         assert h.title == b""
         assert h.low == 0

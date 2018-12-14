@@ -131,7 +131,7 @@ class Methods(uproot_methods.base.ROOTMethods):
             return (float("-inf"), low)
         elif index == len(self) - 1:
             return (high, float("inf"))
-        elif len(self._fXaxis._fXbins) == self._fXaxis._fNbins + 1:
+        elif len(getattr(self._fXaxis, "_fXbins", [])) == self._fXaxis._fNbins + 1:
             return (self._fXaxis._fXbins[index - 1], self._fXaxis._fXbins[index])
         else:
             norm = (high - low) / self._fXaxis._fNbins
@@ -366,10 +366,13 @@ def from_numpy(histogram):
 
     class TAxis(object):
         def __init__(self, edges):
-            self._fNbins = len(edges)-1
+            self._fNbins = len(edges) - 1
             self._fXmin = edges[0]
             self._fXmax = edges[-1]
-            self._fXbins = edges.astype(">f8")
+            if numpy.array_equal(edges, numpy.linspace(self._fXmin, self._fXmax, len(edges), dtype=edges.dtype)):
+                self._fXbins = numpy.array([], dtype=">f8")
+            else:
+                self._fXbins = edges.astype(">f8")
 
     out = TH1.__new__(TH1)
     out._fXaxis = TAxis(edges)
@@ -384,7 +387,6 @@ def from_numpy(histogram):
     else:
         out._fTitle = b""
 
-    out._fName = "h%i" % id(histogram)
     out._classname, content = _histtype(content)
 
     valuesarray = numpy.empty(len(content) + 2, dtype=content.dtype)
