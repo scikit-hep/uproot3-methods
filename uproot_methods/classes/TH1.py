@@ -2,21 +2,21 @@
 
 # Copyright (c) 2018, DIANA-HEP
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -365,15 +365,14 @@ def from_numpy(histogram):
         pass
 
     class TAxis(object):
-        def __init__(self, fNbins, fXmin, fXmax):
-            self._fNbins = fNbins
-            self._fXmin = fXmin
-            self._fXmax = fXmax
+        def __init__(self, edges):
+            self._fNbins = len(edges)-1
+            self._fXmin = edges[0]
+            self._fXmax = edges[-1]
+            self._fXbins = edges.astype(">f8")
 
     out = TH1.__new__(TH1)
-    out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1])
-    if not numpy.array_equal(edges, numpy.linspace(edges[0], edges[-1], len(edges), dtype=edges.dtype)):
-        out._fXaxis._fXbins = edges.astype(">f8")
+    out._fXaxis = TAxis(edges)
 
     centers = (edges[:-1] + edges[1:]) / 2.0
     out._fEntries = out._fTsumw = out._fTsumw2 = content.sum()
@@ -385,6 +384,7 @@ def from_numpy(histogram):
     else:
         out._fTitle = b""
 
+    out._fName = "h%i" % id(histogram)
     out._classname, content = _histtype(content)
 
     valuesarray = numpy.empty(len(content) + 2, dtype=content.dtype)
