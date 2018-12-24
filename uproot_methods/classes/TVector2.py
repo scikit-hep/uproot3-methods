@@ -66,6 +66,9 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
             return TVector2(self.x.sum(), self.y.sum())
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if "out" in kwargs:
+            raise NotImplementedError("in-place operations not supported")
+
         if method != "__call__":
             return NotImplemented
 
