@@ -97,13 +97,13 @@ class Common(object):
         return x, y, z
 
     def rotatex(self, angle):
-        return self.rotate_axis(Methods(1.0, 0.0, 0.0), angle)
+        return self.rotate_axis(TVector3(1.0, 0.0, 0.0), angle)
 
     def rotatey(self, angle):
-        return self.rotate_axis(Methods(0.0, 1.0, 0.0), angle)
+        return self.rotate_axis(TVector3(0.0, 1.0, 0.0), angle)
 
     def rotatez(self, angle):
-        return self.rotate_axis(Methods(0.0, 0.0, 1.0), angle)
+        return self.rotate_axis(TVector3(0.0, 0.0, 1.0), angle)
 
 class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
