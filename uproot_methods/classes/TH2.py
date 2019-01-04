@@ -104,39 +104,82 @@ class Methods(uproot_methods.base.ROOTMethods):
         return self.overflows[1]
 
     @property
+    def edges(self):
+        xaxis = self._fXaxis
+        yaxis = self._fYaxis
+        if len(getattr(xaxis, "_fXbins", [])) > 0:
+            xedges = numpy.array(xaxis._fXbins)
+        else:
+            xedges = numpy.linspace(xaxis._fXmin, xaxis._fXmax, xaxis._fNbins + 1)
+        if len(getattr(yaxis, "_fYbins", [])) > 0:
+            yedges = numpy.array(yaxis._fXbins)
+        else:
+            yedges = numpy.linspace(yaxis._fXmin, yaxis._fXmax, yaxis._fNbins + 1)
+        return xedges, yedges
+
+    @property
+    def alledges(self):
+        xedges, yedges = self.edges
+        vx = numpy.empty(len(xedges) + 2)
+        vy = numpy.empty(len(yedges) + 2)
+        vx[0] = -numpy.inf
+        vx[-1] = numpy.inf
+        vx[1:-1] = xedges
+        vy[0] = -numpy.inf
+        vy[-1] = numpy.inf
+        vy[1:-1] = yedges
+        return vx, vy
+
+    @property
+    def bins(self):
+        xedges, yedges = self.edges
+        vx = numpy.empty((len(xedges) - 1, 2))
+        vy = numpy.empty((len(yedges) - 1, 2))
+        vx[:, 0] = xedges[:-1]
+        vx[:, 1] = xedges[1:]
+        vy[:, 0] = yedges[:-1]
+        vy[:, 1] = yedges[1:]
+        return vx, vy
+
+    @property
+    def allbins(self):
+        xedges, yedges = self.alledges
+        vx = numpy.empty((len(xedges) - 1, 2))
+        vy = numpy.empty((len(yedges) - 1, 2))
+        vx[:, 0] = xedges[:-1]
+        vx[:, 1] = xedges[1:]
+        vy[:, 0] = yedges[:-1]
+        vy[:, 1] = yedges[1:]
+        return vx, vy
+
+    @property
     def values(self):
-        va = numpy.array(self.allvalues)
-        va = va[1:self.ynumbins+1, 1:self.xnumbins+1]
-        return va.tolist()
+        va = self.allvalues
+        return va[1:self.ynumbins+1, 1:self.xnumbins+1]
 
     @property
     def allvalues(self):
-        v = numpy.array(self[:])
-        v = v.reshape(self.ynumbins + 2, self.xnumbins + 2)
-        return v.tolist()
+        v = numpy.array(self[:], dtype=getattr(self, "_dtype", numpy.dtype(numpy.float64)).newbyteorder("="))
+        return v.reshape(self.ynumbins + 2, self.xnumbins + 2)
+
+    @property
+    def variances(self):
+        va = self.allvariances
+        return va[1:self.ynumbins+1, 1:self.xnumbins+1]
+
+    @property
+    def allvariances(self):
+        if len(getattr(self, "_fSumw2", [])) != len(self):
+            v = numpy.array(self, dtype=numpy.float64)
+        else:
+            v = numpy.array(self._fSumw2, dtype=numpy.float64)
+        return v.reshape(self.ynumbins + 2, self.xnumbins + 2)
 
     def numpy(self):
-        xlow  = self.xlow
-        xhigh = self.xhigh
-        xbins = self._fXaxis._fXbins
-        if not xbins:
-            norm   = float(xhigh - xlow) / self.xnumbins
-            xedges = numpy.array([i*norm + xlow for i in range(self.xnumbins + 1)])
-        else:
-            xedges = numpy.array(xbins)
+        return (self.values,) + self.edges
 
-        ylow  = self.ylow
-        yhigh = self.yhigh
-        ybins = self._fYaxis._fXbins
-        if not ybins:
-            norm   = (yhigh - ylow) / self.ynumbins
-            yedges = numpy.array([i*norm + ylow for i in range(self.ynumbins + 1)])
-        else:
-            yedges = numpy.array(ybins)
-
-        freq = numpy.array(self.values, dtype=self._dtype.newbyteorder("="))
-
-        return freq, (xedges, yedges)
+    def numpy(self):
+        return (self.allvalues,) + self.alledges
 
     def interval(self, index, axis):
         if axis == "x":

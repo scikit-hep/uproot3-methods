@@ -107,19 +107,28 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def values(self):
-        return numpy.array(self[1:-1])
+        return self.allvalues[1:-1]
 
     @property
     def allvalues(self):
-        return numpy.array(self)
+        return numpy.array(self, dtype=getattr(self, "_dtype", numpy.dtype(numpy.float64)).newbyteorder("="))
 
     @property
     def variances(self):
-        return numpy.array(self._fSumw2[1:-1])
+        return self.allvariances[1:-1]
 
     @property
     def allvariances(self):
-        return numpy.array(self._fSumw2)
+        if len(getattr(self, "_fSumw2", [])) != len(self):
+            return numpy.array(self, dtype=numpy.float64)
+        else:
+            return numpy.array(self._fSumw2, dtype=numpy.float64)
+
+    def numpy(self):
+        return self.values, self.edges
+
+    def allnumpy(self):
+        return self.allvalues, self.alledges
 
     def interval(self, index):
         if index < 0:
@@ -221,17 +230,9 @@ class Methods(uproot_methods.base.ROOTMethods):
             stream.write(out)
             stream.write("\n")
 
-    def numpy(self):
-        freq = numpy.array(self.values, dtype=self._dtype.newbyteorder("="))
-        if getattr(self._fXaxis, "_fXbins", None):
-            edges = numpy.array(self._fXaxis._fXbins)
-        else:
-            edges = numpy.linspace(self._fXaxis._fXmin, self._fXaxis._fXmax, self._fXaxis._fNbins + 1)
-        return freq, edges
-
     def pandas(self, underflow=True, overflow=True, variance=True):
         import pandas
-        freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
+        freq = numpy.array(self.allvalues, dtype=getattr(self, "_dtype", numpy.dtype(numpy.float64)).newbyteorder("="))
 
         if not underflow and not overflow:
             freq = freq[1:-1]
@@ -288,7 +289,7 @@ class Methods(uproot_methods.base.ROOTMethods):
     def physt(self):
         import physt.binnings
         import physt.histogram1d
-        freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
+        freq = numpy.array(self.allvalues, dtype=getattr(self, "_dtype", numpy.dtype(numpy.float64)).newbyteorder("="))
         if getattr(self._fXaxis, "_fXbins", None):
             binning = physt.binnings.NumpyBinning(numpy.array(self._fXaxis._fXbins))
         else:
