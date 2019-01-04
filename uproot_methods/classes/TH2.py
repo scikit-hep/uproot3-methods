@@ -216,32 +216,6 @@ class Methods(uproot_methods.base.ROOTMethods):
     def yinterval(self, index):
         return self.interval(index, "y")
 
-    def index(self, data, axis):
-        if axis == "x":
-            ind = 0
-            nbins = self.xnumbins
-        elif axis == "y":
-            ind = 1
-            nbins = self.ynumbins
-        else:
-            raise TypeError("Axis must be either 'x' or 'y' to obtain an index.")
-
-        low  = self.low[ind]
-        high = self.high[ind]
-
-        if data < low:
-            return 0
-        elif data >= high:
-            return nbins+1
-        elif not math.isnan(data):
-            return int(math.floor(nbins*(data-low) / (high-low))) + 1
-
-    def xindex(self, data):
-        return self.index(data, "x")
-
-    def yindex(self, data):
-        return self.index(data, "y")
-
     @property
     def ylabels(self):
         if self._fYaxis._fLabels is None:

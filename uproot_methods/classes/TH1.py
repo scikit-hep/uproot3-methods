@@ -146,16 +146,6 @@ class Methods(uproot_methods.base.ROOTMethods):
             norm = (high - low) / self._fXaxis._fNbins
             return (index - 1)*norm + low, index*norm + low
 
-    def index(self, data):
-        low = self._fXaxis._fXmin
-        high = self._fXaxis._fXmax
-        if data < low:
-            return 0
-        elif data >= high:
-            return len(self) - 1
-        elif not math.isnan(data):
-            return int(math.floor(self._fXaxis._fNbins * (data - low) / (high - low))) + 1
-
     @property
     def xlabels(self):
         if getattr(self._fXaxis, "_fLabels", None) is None:
