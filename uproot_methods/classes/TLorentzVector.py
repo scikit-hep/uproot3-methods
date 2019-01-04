@@ -287,6 +287,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
             return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if "out" in kwargs:
+            raise NotImplementedError("in-place operations not supported")
+
         if method != "__call__":
             return NotImplemented
 

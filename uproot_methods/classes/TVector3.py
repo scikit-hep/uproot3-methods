@@ -97,13 +97,13 @@ class Common(object):
         return x, y, z
 
     def rotatex(self, angle):
-        return self.rotate_axis(Methods(1.0, 0.0, 0.0), angle)
+        return self.rotate_axis(TVector3(1.0, 0.0, 0.0), angle)
 
     def rotatey(self, angle):
-        return self.rotate_axis(Methods(0.0, 1.0, 0.0), angle)
+        return self.rotate_axis(TVector3(0.0, 1.0, 0.0), angle)
 
     def rotatez(self, angle):
-        return self.rotate_axis(Methods(0.0, 0.0, 1.0), angle)
+        return self.rotate_axis(TVector3(0.0, 0.0, 1.0), angle)
 
 class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
@@ -157,6 +157,9 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
             return TVector3(self.x.sum(), self.y.sum(), self.z.sum())
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if "out" in kwargs:
+            raise NotImplementedError("in-place operations not supported")
+
         if method != "__call__":
             return NotImplemented
 
