@@ -111,7 +111,7 @@ class Methods(uproot_methods.base.ROOTMethods):
             xedges = numpy.array(xaxis._fXbins)
         else:
             xedges = numpy.linspace(xaxis._fXmin, xaxis._fXmax, xaxis._fNbins + 1)
-        if len(getattr(yaxis, "_fYbins", [])) > 0:
+        if len(getattr(yaxis, "_fXbins", [])) > 0:
             yedges = numpy.array(yaxis._fXbins)
         else:
             yedges = numpy.linspace(yaxis._fXmin, yaxis._fXmax, yaxis._fNbins + 1)
@@ -178,7 +178,7 @@ class Methods(uproot_methods.base.ROOTMethods):
     def numpy(self):
         return (self.values,) + self.edges
 
-    def numpy(self):
+    def allnumpy(self):
         return (self.allvalues,) + self.alledges
 
     def interval(self, index, axis):
