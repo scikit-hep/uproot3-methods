@@ -203,7 +203,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
     @property
     def rapidity(self):
-        return self.awkward.numpy.log((self.t + self.z) / (self.t - self.z)) / 2.0
+        return 0.5 * self.awkward.numpy.log((self.t + self.z) / (self.t - self.z))
 
     @property
     def unit(self):
@@ -279,6 +279,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         else:
             return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
 
+    def to_cartesian(self):
+        return TLorentzVectorArray(self.x,self.y,self.z,self.t)
+
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if "out" in kwargs:
             raise NotImplementedError("in-place operations not supported")
@@ -314,6 +317,83 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
         else:
             return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
+
+class PtEtaPhiMassArrayMethods(ArrayMethods):
+    def _initObjectArray(self, table):
+        self.awkward.ObjectArray.__init__(self, table, lambda row: TLorentzVector(row["fPt"], row["fEta"], row["fPhi"], row["fMass"]))
+        self.content.rowname = "TLorentzVector"
+    
+    @property
+    def x(self):
+        return self._trymemo("x",lambda self: self.pt * self.awkward.numpy.cos(self.phi))
+    
+    @property
+    def y(self):
+        return self._trymemo("y",lambda self: self.pt * self.awkward.numpy.sin(self.phi))
+    
+    @property
+    def z(self):
+        return self._trymemo("z",lambda self: self.pt * self.awkward.numpy.sinh(self.eta))
+    
+    @property
+    def t(self):
+        return self._trymemo("t",lambda self: self.awkward.numpy.sqrt(self.mass**2 + (self.pt*self.awkward.numpy.cosh(self.eta)**2)))
+            
+    @property
+    def pt(self):
+        return self["fPt"]
+    
+    @property
+    def pt2(self):
+        return self["fPt"]**2
+    
+    @property
+    def perp(self):
+        return self["fPt"]
+    
+    @property
+    def perp2(self):
+        return self["fPt"]**2
+    
+    @property
+    def eta(self):
+        return self["fEta"]
+    
+    @property
+    def phi(self):
+        return self["fPhi"]
+    
+    @property
+    def mass(self):
+        return self["fMass"]
+
+    @property
+    def mass2(self):
+        return self["fMass"]**2
+    
+    @property
+    def mag(self):
+        return self["fMass"]
+
+    @property
+    def mag2(self):
+        return self["fMass"]**2
+
+    @property
+    def mt(self):
+        return self.awkward.numpy.sqrt(self.mt2)
+
+    @property
+    def mt2(self):
+        return self["fMass"]**2 + self["fPt"]**2
+
+    @property
+    def p(self):
+        return self._trymemo("p",lambda self: self["fPt"]*self.awkward.numpy.cosh(self["fEta"]))
+    
+    @property
+    def p2(self):
+        return self.p**2
 
 class Methods(Common, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
@@ -544,6 +624,109 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     def __invert__(self):
         return self._unary(operator.invert)
 
+class PtEtaPhiMassMethods(Methods):
+    _arraymethods = PtEtaPhiMassArrayMethods
+    
+    @property
+    def pt(self):
+        return self._fPt
+    
+    @property
+    def eta(self):
+        return self._fEta
+    
+    @property
+    def phi(self):
+        return self._fPhi
+    
+    @property
+    def mass(self):
+        return self._fMass
+    
+    @property
+    def mag(self):
+        return self._fMass
+    
+    @property
+    def mt(self):
+        out = self.mt2
+        if out >= 0:
+            return math.sqrt(out)
+        else:
+            return -math.sqrt(out)
+    
+    @property
+    def mt2(self):
+        return self._fMass**2 + self._fPt**2
+    
+    @property
+    def p3(self):
+        return uproot_methods.classes.TVector3.TVector3(self.x, self.y, self.z)
+    
+    @property
+    def x(self):
+        return self.pt * self.awkward.numpy.cos(self.phi)
+    
+    @property
+    def y(self):
+        return self.pt * self.awkward.numpy.sin(self.phi)
+    
+    @property
+    def z(self):
+        return self.pt * self.awkward.numpy.sinh(self.eta)
+    
+    @property
+    def t(self):
+        x = self.x
+        y = self.y
+        z = self.z
+        mass = self.mass
+        return self.awkward.numpy.sqrt(x*x + y*y + z*z + mass*mass*self.awkward.numpy.sign(mass))
+    
+    def __repr__(self):
+        return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fPt, self._fEta, self._fPhi, self._fMass)
+
+class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
+    def __init__(self, pt, eta, phi, mass):
+        self._initObjectArray(self.awkward.Table())
+        self["fPt"]   = pt
+        self["fEta"]  = eta
+        self["fPhi"]  = phi
+        self["fMass"] = mass
+
+    @property
+    def pt(self):
+        return self["fPt"]
+    
+    @pt.setter
+    def pt(self, value):
+        self["fPt"] = value
+
+    @property
+    def eta(self):
+        return self["fEta"]
+    
+    @eta.setter
+    def eta(self, value):
+        self["fEta"] = value
+
+    @property
+    def phi(self):
+        return self["fPhi"]
+    
+    @phi.setter
+    def phi(self, value):
+        self["fPhi"] = value
+
+    @property
+    def mass(self):
+        return self["fMass"]
+    
+    @mass.setter
+    def mass(self, value):
+        self["fMass"] = value
+
+
 class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, x, y, z, t):
         self._initObjectArray(self.awkward.Table())
@@ -605,15 +788,7 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
         wrap, (pt, eta, phi, mass) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((pt, eta, phi, mass)))
-        x = pt * cls.awkward.numpy.cos(phi)
-        y = pt * cls.awkward.numpy.sin(phi)
-        z = pt * cls.awkward.numpy.sinh(eta)
-        p3 = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
-        out = cls.from_p3(p3, cls.awkward.numpy.sqrt(x*x + y*y + z*z + mass*mass*cls.awkward.numpy.sign(mass)))
-        out._memo_pt = pt
-        out._memo_eta = eta
-        out._memo_phi = phi
-        out._memo_mass = mass
+        out = PtEtaPhiMassLorentzVectorArray(pt,eta,phi,mass)
         return wrap(out)
 
     @property
@@ -656,6 +831,41 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
     def E(self, value):
         self["fE"] = value
 
+class PtEtaPhiMassLorentzVector(PtEtaPhiMassMethods):
+    def __init__(self, pt, eta, phi, mass):
+        self._fPt   = pt
+        self._fEta  = eta
+        self._fPhi  = phi
+        self._fMass = mass
+                                       
+    @property
+    def pt(self):
+        return self._fPt
+                                           
+    @property
+    def eta(self):
+        return self._fEta
+                                       
+    @eta.setter
+    def eta(self, value):
+        self._fEta = value
+                                       
+    @property
+    def phi(self):
+        return self._fPhi
+                                       
+    @eta.setter
+    def phi(self, value):
+        self._fPhi = value
+                                       
+    @property
+    def mass(self):
+        return self._fMass
+                                       
+    @mass.setter
+    def mass(self, value):
+        self._fMass = value
+                                       
 class TLorentzVector(Methods):
     def __init__(self, x, y, z, t):
         self._fP = uproot_methods.classes.TVector3.TVector3(x, y, z)
@@ -693,8 +903,7 @@ class TLorentzVector(Methods):
     
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
-        tmp = cls.from_ptetaphi(pt, eta, phi, 0)
-        return cls.from_xyzm(tmp.x, tmp.y, tmp.z, mass)
+        return PtEtaPhiMassLorentzVector(pt,eta,phi,mass)
 
     @property
     def x(self):
