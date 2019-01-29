@@ -57,7 +57,7 @@ class ROOTMethods(awkward.Methods):
         arrays = list(arrays)
         starts, stops = None, None
         for i in range(len(arrays)):
-            if starts is None and isinstance(arrays[i], awkward.JaggedArray):
+            if starts is None and isinstance(arrays[i], cls.awkward.JaggedArray):
                 starts, stops = arrays[i].starts, arrays[i].stops
 
             if not isinstance(arrays[i], Iterable):
@@ -69,7 +69,7 @@ class ROOTMethods(awkward.Methods):
             return arrays
 
         for i in range(len(arrays)):
-            if not isinstance(arrays[i], awkward.JaggedArray) or not (cls.awkward.numpy.array_equal(starts, arrays[i].starts) and cls.awkward.numpy.array_equal(stops, arrays[i].stops)):
+            if not isinstance(arrays[i], cls.awkward.JaggedArray) or not (cls.awkward.numpy.array_equal(starts, arrays[i].starts) and cls.awkward.numpy.array_equal(stops, arrays[i].stops)):
                 content = cls.awkward.numpy.zeros(stops.max(), dtype=cls.awkward.numpy.float64)
                 arrays[i] = cls.awkward.JaggedArray(starts, stops, content) + arrays[i]    # invoke jagged broadcasting to align arrays
 
@@ -77,7 +77,7 @@ class ROOTMethods(awkward.Methods):
 
     @classmethod
     def _unwrap_jagged(cls, ArrayMethods, arrays):
-        if not isinstance(arrays[0], awkward.JaggedArray):
+        if not isinstance(arrays[0], cls.awkward.JaggedArray):
             return lambda x: x, arrays
         else:
             if ArrayMethods is None:
