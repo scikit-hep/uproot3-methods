@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, DIANA-HEP
+# Copyright (c) 2019, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@ import numbers
 import math
 import sys
 
-# uses numpy, not awkward.util.numpy, because it operates on TFile data, not TTree data
 import numpy
 
 import uproot_methods.base
