@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, DIANA-HEP
+# Copyright (c) 2019, IRIS-HEP
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -32,9 +32,6 @@ import math
 import numbers
 import operator
 
-import awkward
-import awkward.util
-
 class Common(object):
     @property
     def mag2(self):
@@ -42,7 +39,7 @@ class Common(object):
 
     @property
     def mag(self):
-        return awkward.util.numpy.sqrt(self.mag2)
+        return self.awkward.numpy.sqrt(self.mag2)
 
     @property
     def rho2(self):
@@ -60,7 +57,7 @@ class Common(object):
         return self.cosdelta(other) - (-1) < tolerance
 
     def iscollinear(self, other, tolerance=1e-10):
-        return 1 - awkward.util.numpy.absolute(self.cosdelta(other)) < tolerance
+        return 1 - self.awkward.numpy.absolute(self.cosdelta(other)) < tolerance
 
     def __lt__(self, other):
         raise TypeError("spatial vectors have no natural ordering")
@@ -82,56 +79,56 @@ class ArrayMethods(Common):
     @property
     def rho(self):
         out = self.rho2
-        return awkward.util.numpy.sqrt(out)
+        return self.awkward.numpy.sqrt(out)
 
     @property
     def phi(self):
-        return awkward.util.numpy.arctan2(self.y, self.x)
+        return self.awkward.numpy.arctan2(self.y, self.x)
 
     def cosdelta(self, other):
         denom = self.mag2 * other.mag2
         mask = (denom > 0)
         denom = denom[mask]
-        denom[:] = awkward.util.numpy.sqrt(denom)
+        denom[:] = self.awkward.numpy.sqrt(denom)
 
         out = self.dot(other)
         out[mask] /= denom
 
-        mask = awkward.util.numpy.logical_not(mask)
+        mask = self.awkward.numpy.logical_not(mask)
         out[mask] = 1
 
-        return awkward.util.numpy.clip(out, -1, 1)
+        return self.awkward.numpy.clip(out, -1, 1)
 
     def angle(self, other, normal=None, degrees=False):
-        out = awkward.util.numpy.arccos(self.cosdelta(other))
+        out = self.awkward.numpy.arccos(self.cosdelta(other))
         if normal is not None:
             a = self.unit
             b = other.unit
-            out = out * awkward.util.numpy.sign(normal.dot(a.cross(b)))
+            out = out * self.awkward.numpy.sign(normal.dot(a.cross(b)))
         if degrees:
-            out = awkward.util.numpy.multiply(out, 180.0/awkward.util.numpy.pi)
+            out = self.awkward.numpy.multiply(out, 180.0/self.awkward.numpy.pi)
         return out
 
     def isopposite(self, other, tolerance=1e-10):
         tmp = self + other
-        tmp.x = awkward.util.numpy.absolute(tmp.x)
-        tmp.y = awkward.util.numpy.absolute(tmp.y)
-        tmp.z = awkward.util.numpy.absolute(tmp.z)
+        tmp.x = self.awkward.numpy.absolute(tmp.x)
+        tmp.y = self.awkward.numpy.absolute(tmp.y)
+        tmp.z = self.awkward.numpy.absolute(tmp.z)
 
         out = (tmp.x < tolerance)
-        out = awkward.util.numpy.bitwise_and(out, tmp.y < tolerance)
-        out = awkward.util.numpy.bitwise_and(out, tmp.z < tolerance)
+        out = self.awkward.numpy.bitwise_and(out, tmp.y < tolerance)
+        out = self.awkward.numpy.bitwise_and(out, tmp.z < tolerance)
         return out
 
     def isperpendicular(self, other, tolerance=1e-10):
         tmp = self.dot(other)
-        tmp.x = awkward.util.numpy.absolute(tmp.x)
-        tmp.y = awkward.util.numpy.absolute(tmp.y)
-        tmp.z = awkward.util.numpy.absolute(tmp.z)
+        tmp.x = self.awkward.numpy.absolute(tmp.x)
+        tmp.y = self.awkward.numpy.absolute(tmp.y)
+        tmp.z = self.awkward.numpy.absolute(tmp.z)
 
         out = (tmp.x < tolerance)
-        out = awkward.util.numpy.bitwise_and(out, tmp.y < tolerance)
-        out = awkward.util.numpy.bitwise_and(out, tmp.z < tolerance)
+        out = self.awkward.numpy.bitwise_and(out, tmp.y < tolerance)
+        out = self.awkward.numpy.bitwise_and(out, tmp.z < tolerance)
         return out
 
 class Methods(Common):
@@ -218,7 +215,7 @@ class Methods(Common):
         return self._scalar(operator.divmod, other, True)
 
     def __pow__(self, other):
-        if isinstance(other, (numbers.Number, awkward.util.numpy.number)):
+        if isinstance(other, (numbers.Number, self.awkward.numpy.number)):
             if other == 2:
                 return self.mag2
             else:

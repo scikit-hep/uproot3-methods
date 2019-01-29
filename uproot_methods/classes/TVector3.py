@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, DIANA-HEP
+# Copyright (c) 2019, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,9 +31,6 @@
 import math
 import numbers
 
-import awkward
-import awkward.util
-
 import uproot_methods.base
 import uproot_methods.common.TVector
 
@@ -57,8 +54,8 @@ class Common(object):
 
     def _rotate_axis(self, axis, angle):
         u = axis.unit
-        c = awkward.util.numpy.cos(angle)
-        s = awkward.util.numpy.sin(angle)
+        c = self.awkward.numpy.cos(angle)
+        s = self.awkward.numpy.sin(angle)
         c1 = 1 - c
 
         x = (c + u.x**2 * c1) * self.x + (u.x * u.y * c1 - u.z * s) * self.y + (u.x * u.z * c1 + u.y * s) * self.z
@@ -69,12 +66,12 @@ class Common(object):
 
     def _rotate_euler(self, phi, theta, psi):
         # Rotate Z (phi)
-        c1 = awkward.util.numpy.cos(phi)
-        s1 = awkward.util.numpy.sin(phi)
-        c2 = awkward.util.numpy.cos(theta)
-        s2 = awkward.util.numpy.sin(theta)
-        c3 = awkward.util.numpy.cos(psi)
-        s3 = awkward.util.numpy.sin(psi)
+        c1 = self.awkward.numpy.cos(phi)
+        s1 = self.awkward.numpy.sin(phi)
+        c2 = self.awkward.numpy.cos(theta)
+        s2 = self.awkward.numpy.sin(theta)
+        c3 = self.awkward.numpy.cos(psi)
+        s3 = self.awkward.numpy.sin(psi)
 
         # Rotate Y (theta)
         fzx2 = -s2*c1
@@ -107,7 +104,7 @@ class Common(object):
 
 class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
-        awkward.ObjectArray.__init__(self, table, lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
+        self.awkward.ObjectArray.__init__(self, table, lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
         self.content.rowname = "TVector3"
 
     @property
@@ -132,7 +129,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
 
     @property
     def theta(self):
-        return awkward.util.numpy.arctan2(self.rho, self.z)
+        return self.awkward.numpy.arctan2(self.rho, self.z)
 
     def rotate_axis(self, axis, angle):
         x, y, z = self._rotate_axis(axis, angle)
@@ -151,7 +148,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
         return out
 
     def sum(self):
-        if isinstance(self, awkward.JaggedArray):
+        if isinstance(self, self.awkward.JaggedArray):
             return TVector3Array.from_cartesian(self.x.sum(), self.y.sum(), self.z.sum())
         else:
             return TVector3(self.x.sum(), self.y.sum(), self.z.sum())
@@ -165,12 +162,12 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
 
         inputs = list(inputs)
         for i in range(len(inputs)):
-            if isinstance(inputs[i], awkward.util.numpy.ndarray) and inputs[i].dtype == awkward.util.numpy.dtype(object) and len(inputs[i]) > 0:
-                idarray = awkward.util.numpy.frombuffer(inputs[i], dtype=awkward.util.numpy.uintp)
+            if isinstance(inputs[i], self.awkward.numpy.ndarray) and inputs[i].dtype == self.awkward.numpy.dtype(object) and len(inputs[i]) > 0:
+                idarray = self.awkward.numpy.frombuffer(inputs[i], dtype=self.awkward.numpy.uintp)
                 if (idarray == idarray[0]).all():
                     inputs[i] = inputs[i][0]
 
-        if ufunc is awkward.util.numpy.add or ufunc is awkward.util.numpy.subtract:
+        if ufunc is self.awkward.numpy.add or ufunc is self.awkward.numpy.subtract:
             if not all(isinstance(x, (ArrayMethods, Methods)) for x in inputs):
                 raise TypeError("(arrays of) TVector3 can only be added to/subtracted from other (arrays of) TVector3")
             out = self.empty_like()
@@ -179,13 +176,13 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
             out["fZ"] = getattr(ufunc, method)(*[x.z for x in inputs], **kwargs)
             return out
 
-        elif ufunc is awkward.util.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, awkward.util.numpy.number)):
+        elif ufunc is self.awkward.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, self.awkward.numpy.number)):
             if inputs[1] == 2:
                 return self.mag2
             else:
                 return self.mag2**(0.5*inputs[1])
 
-        elif ufunc is awkward.util.numpy.absolute:
+        elif ufunc is self.awkward.numpy.absolute:
             return self.mag
 
         else:
@@ -216,7 +213,7 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         return isinstance(other, Methods) and self.x == other.x and self.y == other.y and self.z == other.z
 
     def _scalar(self, operator, scalar, reverse=False):
-        if not isinstance(scalar, (numbers.Number, awkward.util.numpy.number)):
+        if not isinstance(scalar, (numbers.Number, self.awkward.numpy.number)):
             raise TypeError("cannot {0} a TVector3 with a {1}".format(operator.__name__, type(scalar).__name__))
         if reverse:
             return TVector3(operator(scalar, self.x), operator(scalar, self.y), operator(scalar, self.z))
@@ -249,9 +246,9 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
     def rotate_euler(self, phi=0, theta=0, psi=0):
         return TVector3(x, y, z)
 
-class TVector3Array(ArrayMethods, awkward.ObjectArray):
+class TVector3Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, x, y, z):
-        self._initObjectArray(awkward.Table())
+        self._initObjectArray(self.awkward.Table())
         self["fX"] = x
         self["fY"] = y
         self["fZ"] = z
@@ -259,10 +256,10 @@ class TVector3Array(ArrayMethods, awkward.ObjectArray):
     @classmethod
     def origin(cls, shape, dtype=None):
         if dtype is None:
-            dtype = awkward.util.numpy.float64
-        return cls(awkward.util.numpy.zeros(shape, dtype=dtype),
-                   awkward.util.numpy.zeros(shape, dtype=dtype),
-                   awkward.util.numpy.zeros(shape, dtype=dtype))
+            dtype = cls.awkward.numpy.float64
+        return cls(cls.awkward.numpy.zeros(shape, dtype=dtype),
+                   cls.awkward.numpy.zeros(shape, dtype=dtype),
+                   cls.awkward.numpy.zeros(shape, dtype=dtype))
 
     @classmethod
     def origin_like(cls, array):
@@ -270,21 +267,21 @@ class TVector3Array(ArrayMethods, awkward.ObjectArray):
 
     @classmethod
     def from_cartesian(cls, x, y, z):
-        wrap, (x, y, z) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((x, y, z)))
+        wrap, (x, y, z) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((x, y, z)))
         return wrap(cls(x, y, z))
 
     @classmethod
     def from_spherical(cls, r, theta, phi):
-        wrap, (r, theta, phi) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((r, theta, phi)))
-        return wrap(cls(r * awkward.util.numpy.sin(theta) * awkward.util.numpy.cos(phi),
-                        r * awkward.util.numpy.sin(theta) * awkward.util.numpy.sin(phi),
-                        r * awkward.util.numpy.cos(theta)))
+        wrap, (r, theta, phi) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((r, theta, phi)))
+        return wrap(cls(r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.cos(phi),
+                        r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.sin(phi),
+                        r * cls.awkward.numpy.cos(theta)))
 
     @classmethod
     def from_cylindrical(cls, rho, phi, z):
-        wrap, (rho, phi, z) = uproot_methods.base._unwrap_jagged(ArrayMethods, uproot_methods.base._normalize_arrays((rho, phi, z)))
-        return wrap(cls(rho * awkward.util.numpy.cos(phi),
-                        rho * awkward.util.numpy.sin(phi),
+        wrap, (rho, phi, z) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((rho, phi, z)))
+        return wrap(cls(rho * cls.awkward.numpy.cos(phi),
+                        rho * cls.awkward.numpy.sin(phi),
                         z))
 
     @property
