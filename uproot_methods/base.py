@@ -92,5 +92,5 @@ class ROOTMethods(awkward.Methods):
         memoname = "_memo_" + name
         wrap, (array,) = type(self)._unwrap_jagged(None, (self,))
         if not hasattr(array, memoname):
-            setattr(array, memoname, function(self))
+            setattr(array, memoname, function(array))
         return wrap(getattr(array, memoname))
