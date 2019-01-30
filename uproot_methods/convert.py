@@ -49,7 +49,7 @@ def towriteable(obj):
                 for y in types(x, obj):
                     yield y
 
-        if any(x == ("builtins", "bytes") or x == ("builtins", "str") for x in types(obj.__class__, obj)):
+        if any(x == ("builtins", "bytes") or x == ("builtins", "str") or x == ("__builtin__", "str") or x == ("__builtin__", "unicode") for x in types(obj.__class__, obj)):
             return (None, None, "uproot.write.objects.TObjString", "TObjString")
 
         elif isinstance(obj, tuple) and any(x[:2] == ("numpy", "ndarray") for x in types(obj[0].__class__, obj[0])) and any(x[:2] == ("numpy", "ndarray") for x in types(obj[1].__class__, obj[1])) and len(obj[0]) + 1 == len(obj[1]):
