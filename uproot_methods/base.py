@@ -85,8 +85,11 @@ class ROOTMethods(awkward.Methods):
             else:
                 awkcls = ArrayMethods.mixin(ArrayMethods, cls.awkward.JaggedArray)
             counts = arrays[0].stops - arrays[0].starts
-            starts = awkward.numpy.cumsum(counts) - counts[0]
-            stops = starts + counts
+            if hasattr(awkcls, "counts2startsstops"):
+                starts, stops = awkcls.counts2startsstops(arrays[0].counts)
+            else:
+                offsets = awkcls.counts2offsets(arrays[0].counts)
+                starts, stops = offsets[:-1], offsets[1:]
             wrap, arrays = cls._unwrap_jagged(ArrayMethods, [x.flatten() for x in arrays])
             return lambda x: awkcls(starts, stops, wrap(x)), arrays
 
