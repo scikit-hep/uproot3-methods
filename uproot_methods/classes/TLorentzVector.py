@@ -280,7 +280,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
             return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
 
     def to_cartesian(self):
-        return TLorentzVectorArray(self.x,self.y,self.z,self.t)
+        return TLorentzVectorArray.from_cartesian(self.x,self.y,self.z,self.t)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if "out" in kwargs:
@@ -337,8 +337,8 @@ class PtEtaPhiMassArrayMethods(ArrayMethods):
     
     @property
     def t(self):
-        return self._trymemo("t",lambda self: self.awkward.numpy.sqrt(self.mass**2 + (self.pt*self.awkward.numpy.cosh(self.eta)**2)))
-            
+        return self._trymemo("t",lambda self: self.awkward.numpy.hypot(self.mass, self.p))
+
     @property
     def pt(self):
         return self["fPt"]
@@ -397,7 +397,7 @@ class PtEtaPhiMassArrayMethods(ArrayMethods):
 
 class Methods(Common, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
-
+    
     @property
     def p3(self):
         return self._fP
@@ -725,7 +725,6 @@ class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.ba
     @mass.setter
     def mass(self, value):
         self["fMass"] = value
-
 
 class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, x, y, z, t):
