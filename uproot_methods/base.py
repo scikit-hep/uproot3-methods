@@ -59,8 +59,10 @@ class ROOTMethods(awkward.Methods):
         starts, stops = None, None
         for i in range(len(arrays)):
             if starts is None and isinstance(arrays[i], cls.awkward.JaggedArray):
-                jaggedtype[i] = type(arrays[i])
                 starts, stops = arrays[i].starts, arrays[i].stops
+
+            if isinstance(arrays[i], cls.awkward.JaggedArray):
+                jaggedtype[i] = type(arrays[i])
 
             if not isinstance(arrays[i], Iterable):
                 arrays[i] = cls.awkward.numpy.full(length, arrays[i])
