@@ -83,11 +83,15 @@ class ROOTMethods(awkward.Methods):
             return lambda x: x, arrays
         else:
             if ArrayMethods is None:
-                awkcls = arrays[0].JaggedArray #cls.awkward.JaggedArray
+                awkcls = arrays[0].JaggedArray
             else:
                 awkcls = ArrayMethods.mixin(ArrayMethods, arrays[0].JaggedArray)
-            starts, stops = arrays[0].starts, arrays[0].stops
-            wrap, arrays = cls._unwrap_jagged(ArrayMethods, [x.content for x in arrays])
+            counts = arrays[0].counts.reshape(-1)
+            offsets = awkcls.counts2offsets(counts)
+            starts, stops = offsets[:-1], offsets[1:]
+            starts = starts.reshape(arrays[0].starts.shape[:-1] + (-1,))
+            stops = stops.reshape(arrays[0].stops.shape[:-1] + (-1,))
+            wrap, arrays = cls._unwrap_jagged(ArrayMethods, [x.flatten() for x in arrays])
             return lambda x: awkcls(starts, stops, wrap(x)), arrays
 
     def _trymemo(self, name, function):
