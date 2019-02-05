@@ -64,3 +64,17 @@ class Test(unittest.TestCase):
         assert p2[0][0].rho == 1.0
         assert type(p2.rho) is awkward.JaggedArray
         assert type(p2.x) is awkward.JaggedArray
+
+    def test_issue39(self):
+        counts = [2,2,2]
+        mask = [True, False, True]
+
+        pt = awkward.JaggedArray.fromcounts(counts, [42.71, 31.46, 58.72, 30.19, 47.75, 10.83])
+        eta = awkward.JaggedArray.fromcounts(counts, [0.54, 1.57, -2.33, -1.22, -2.03, -0.37])
+        phi = awkward.JaggedArray.fromcounts(counts, [-2.13, 0.65, 2.74, 0.36, 2.87, -0.47])
+
+        pt = pt[mask]
+        eta = eta[mask]
+        phi = phi[mask]
+
+        electrons = uproot_methods.TLorentzVectorArray.from_ptetaphim(pt, eta, phi, 0.000511)
