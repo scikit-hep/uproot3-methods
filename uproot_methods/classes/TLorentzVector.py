@@ -279,7 +279,8 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         else:
             return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
 
-    def to_cartesian(self):
+    def _to_cartesian(self):
+        print 'called _to_cartesian()'
         return TLorentzVectorArray.from_cartesian(self.x,self.y,self.z,self.t)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
@@ -299,11 +300,12 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         if ufunc is self.awkward.numpy.add or ufunc is self.awkward.numpy.subtract:
             if not all(isinstance(x, (ArrayMethods, Methods)) for x in inputs):
                 raise TypeError("(arrays of) TLorentzVector can only be added to/subtracted from other (arrays of) TLorentzVector")
-            out = self.empty_like()
-            out["fX"] = getattr(ufunc, method)(*[x.x for x in inputs], **kwargs)
-            out["fY"] = getattr(ufunc, method)(*[x.y for x in inputs], **kwargs)
-            out["fZ"] = getattr(ufunc, method)(*[x.z for x in inputs], **kwargs)
-            out["fE"] = getattr(ufunc, method)(*[x.t for x in inputs], **kwargs)
+            cart_inputs = [x._to_cartesian() for x in inputs]
+            out = cart_inputs[0].empty_like()
+            out["fX"] = getattr(ufunc, method)(*[x.x for x in cart_inputs], **kwargs)
+            out["fY"] = getattr(ufunc, method)(*[x.y for x in cart_inputs], **kwargs)
+            out["fZ"] = getattr(ufunc, method)(*[x.z for x in cart_inputs], **kwargs)
+            out["fE"] = getattr(ufunc, method)(*[x.t for x in cart_inputs], **kwargs)
             return out
 
         elif ufunc is self.awkward.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, self.awkward.numpy.number)):
@@ -320,8 +322,8 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
 class PtEtaPhiMassArrayMethods(ArrayMethods):
     def _initObjectArray(self, table):
-        self.awkward.ObjectArray.__init__(self, table, lambda row: TLorentzVector(row["fPt"], row["fEta"], row["fPhi"], row["fMass"]))
-        self.content.rowname = "TLorentzVector"
+        self.awkward.ObjectArray.__init__(self, table, lambda row: PtEtaPhiMassLorentzVector(row["fPt"], row["fEta"], row["fPhi"], row["fMass"]))
+        self.content.rowname = "PtEtaPhiMassLorentzVector"
     
     @property
     def x(self):
@@ -418,6 +420,9 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     def t(self):
         return self._fE
 
+    def _to_cartesian(self):
+        return TLorentzVector(self.x,self.y,self.z,self.t)
+    
     def __repr__(self):
         return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
 
@@ -428,23 +433,26 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
         return isinstance(other, Methods) and self.x == other.x and self.y == other.y and self.z == other.z and self.t == other.t
 
     def _scalar(self, operator, scalar, reverse=False):
+        cart = self._to_cartesian()
         if not isinstance(scalar, (numbers.Number, self.awkward.numpy.number)):
             raise TypeError("cannot {0} a TLorentzVector with a {1}".format(operator.__name__, type(scalar).__name__))
         if reverse:
-            return TLorentzVector(operator(scalar, self.x), operator(scalar, self.y), operator(scalar, self.z), operator(scalar, self.t))
+            return TLorentzVector(operator(scalar, cart.x), operator(scalar, cart.y), operator(scalar, cart.z), operator(scalar, cart.t))
         else:
-            return TLorentzVector(operator(self.x, scalar), operator(self.y, scalar), operator(self.z, scalar), operator(self.t, scalar))
+            return TLorentzVector(operator(cart.x, scalar), operator(cart.y, scalar), operator(cart.z, scalar), operator(cart.t, scalar))
 
     def _vector(self, operator, vector, reverse=False):
+        cart = self._to_cartesian()
         if not isinstance(vector, Methods):
             raise TypeError("cannot {0} a TLorentzVector with a {1}".format(operator.__name__, type(vector).__name__))
         if reverse:
-            return TLorentzVector(operator(vector.x, self.x), operator(vector.y, self.y), operator(vector.z, self.z), operator(vector.t, self.t))
+            return TLorentzVector(operator(vector.x, cart.x), operator(vector.y, cart.y), operator(vector.z, cart.z), operator(vector.t, cart.t))
         else:
-            return TLorentzVector(operator(self.x, vector.x), operator(self.y, vector.y), operator(self.z, vector.z), operator(self.t, vector.t))
+            return TLorentzVector(operator(cart.x, vector.x), operator(cart.y, vector.y), operator(cart.z, vector.z), operator(cart.t, vector.t))
 
     def _unary(self, operator):
-        return TLorentzVector(operator(self.x), operator(self.y), operator(self.z), operator(self.t))
+        cart = self._to_cartesian()
+        return TLorentzVector(operator(cart.x), operator(cart.y), operator(cart.z), operator(cart.t))
 
     @property
     def pt(self):
@@ -648,6 +656,10 @@ class PtEtaPhiMassMethods(Methods):
         return self._fMass
     
     @property
+    def mag2(self):
+        return self._fMass**2
+    
+    @property
     def mt(self):
         out = self.mt2
         if out >= 0:
@@ -693,6 +705,7 @@ class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.ba
         self["fEta"]  = eta
         self["fPhi"]  = phi
         self["fMass"] = mass
+        print 'called PtEtaPhiMassLorentzVectorArray()',self.columns
 
     @property
     def pt(self):
@@ -836,10 +849,15 @@ class PtEtaPhiMassLorentzVector(PtEtaPhiMassMethods):
         self._fEta  = eta
         self._fPhi  = phi
         self._fMass = mass
+        print 'called PtEtaPhiMassLorentzVector()'
                                        
     @property
     def pt(self):
         return self._fPt
+    
+    @pt.setter
+    def pt(self,value):
+        self._fPt = value
                                            
     @property
     def eta(self):
@@ -853,7 +871,7 @@ class PtEtaPhiMassLorentzVector(PtEtaPhiMassMethods):
     def phi(self):
         return self._fPhi
                                        
-    @eta.setter
+    @phi.setter
     def phi(self, value):
         self._fPhi = value
                                        
