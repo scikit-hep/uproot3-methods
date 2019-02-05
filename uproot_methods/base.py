@@ -55,9 +55,11 @@ class ROOTMethods(awkward.Methods):
             raise TypeError("cannot construct an array if all arguments are scalar")
 
         arrays = list(arrays)
+        jaggedType = []
         starts, stops = None, None
         for i in range(len(arrays)):
             if starts is None and isinstance(arrays[i], cls.awkward.JaggedArray):
+                jaggedType.append(type(arrays[i]))
                 starts, stops = arrays[i].starts, arrays[i].stops
 
             if not isinstance(arrays[i], Iterable):
@@ -71,7 +73,7 @@ class ROOTMethods(awkward.Methods):
         for i in range(len(arrays)):
             if not isinstance(arrays[i], cls.awkward.JaggedArray) or not (cls.awkward.numpy.array_equal(starts, arrays[i].starts) and cls.awkward.numpy.array_equal(stops, arrays[i].stops)):
                 content = cls.awkward.numpy.zeros(stops.max(), dtype=cls.awkward.numpy.float64)
-                arrays[i] = cls.awkward.JaggedArray(starts, stops, content) + arrays[i]    # invoke jagged broadcasting to align arrays
+                arrays[i] = jaggedType[i](starts, stops, content) + arrays[i]    # invoke jagged broadcasting to align arrays
 
         return arrays
 
@@ -81,9 +83,9 @@ class ROOTMethods(awkward.Methods):
             return lambda x: x, arrays
         else:
             if ArrayMethods is None:
-                awkcls = cls.awkward.JaggedArray
+                awkcls = arrays[0].JaggedArray #cls.awkward.JaggedArray
             else:
-                awkcls = ArrayMethods.mixin(ArrayMethods, cls.awkward.JaggedArray)
+                awkcls = ArrayMethods.mixin(ArrayMethods, arrays[0].JaggedArray)
             starts, stops = arrays[0].starts, arrays[0].stops
             wrap, arrays = cls._unwrap_jagged(ArrayMethods, [x.content for x in arrays])
             return lambda x: awkcls(starts, stops, wrap(x)), arrays
