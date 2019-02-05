@@ -44,21 +44,11 @@ class Test(unittest.TestCase):
 
     def test_issue10(self):
         p4 = TLorentzVectorArray.from_ptetaphim(awkward.JaggedArray.fromiter([[1.0]]), awkward.JaggedArray.fromiter([[1.0]]), awkward.JaggedArray.fromiter([[1.0]]), awkward.JaggedArray.fromiter([[1.0]]))
-        print
-        print type(p4)
-        print inspect.getmro(type(p4))
-        print 'p4.mass.tolist() == [[1.0]]'
         assert p4.mass.tolist() == [[1.0]]
-        print 'p4[0].mass.tolist() == [1.0]'
         assert p4[0].mass.tolist() == [1.0]
-        print 'p4[0][0].mass == 1.0'
         assert p4[0][0].mass == 1.0
-        print 'type(p4.mass) is awkward.JaggedArray'
+        assert p4[0][0]._to_cartesian().mass == 0.9999999999999999
         assert type(p4.mass) is awkward.JaggedArray
-        print inspect.getmro(type(p4))
-        print type(p4), isinstance(p4,uproot_methods.classes.TLorentzVector.PtEtaPhiMassLorentzVectorArray)
-        print inspect.getmro(type(p4))
-        print 'type(p4.x) is awkward.JaggedArray'
         assert type(p4.x) is awkward.JaggedArray
 
         p3 = TVector3Array.from_cylindrical(awkward.JaggedArray.fromiter([[1.0]]), awkward.JaggedArray.fromiter([[1.0]]), awkward.JaggedArray.fromiter([[1.0]]))

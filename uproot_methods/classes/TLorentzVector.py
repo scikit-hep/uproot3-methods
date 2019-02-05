@@ -280,7 +280,6 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
             return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
 
     def _to_cartesian(self):
-        print 'called _to_cartesian()'
         return TLorentzVectorArray.from_cartesian(self.x,self.y,self.z,self.t)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
@@ -705,7 +704,6 @@ class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.ba
         self["fEta"]  = eta
         self["fPhi"]  = phi
         self["fMass"] = mass
-        print 'called PtEtaPhiMassLorentzVectorArray()',self.columns
 
     @property
     def pt(self):
@@ -799,7 +797,7 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
 
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
-        wrap, (pt, eta, phi, mass) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((pt, eta, phi, mass)))
+        wrap, (pt, eta, phi, mass) = cls._unwrap_jagged(PtEtaPhiMassArrayMethods, cls._normalize_arrays((pt, eta, phi, mass)))
         out = PtEtaPhiMassLorentzVectorArray(pt,eta,phi,mass)
         return wrap(out)
 
@@ -849,8 +847,7 @@ class PtEtaPhiMassLorentzVector(PtEtaPhiMassMethods):
         self._fEta  = eta
         self._fPhi  = phi
         self._fMass = mass
-        print 'called PtEtaPhiMassLorentzVector()'
-                                       
+    
     @property
     def pt(self):
         return self._fPt
