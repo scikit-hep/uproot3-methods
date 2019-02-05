@@ -55,11 +55,11 @@ class ROOTMethods(awkward.Methods):
             raise TypeError("cannot construct an array if all arguments are scalar")
 
         arrays = list(arrays)
-        jaggedType = []
+        jagged_type = cls.awkward.JaggedArray
         starts, stops = None, None
         for i in range(len(arrays)):
-            if starts is None and isinstance(arrays[i], cls.awkward.JaggedArray):
-                jaggedType.append(type(arrays[i]))
+            if starts is None and issubclass(type(arrays[i]), cls.awkward.array.base.AwkwardArray):
+                jagged_type = type(arrays[i])
                 starts, stops = arrays[i].starts, arrays[i].stops
 
             if not isinstance(arrays[i], Iterable):
@@ -73,7 +73,7 @@ class ROOTMethods(awkward.Methods):
         for i in range(len(arrays)):
             if not isinstance(arrays[i], cls.awkward.JaggedArray) or not (cls.awkward.numpy.array_equal(starts, arrays[i].starts) and cls.awkward.numpy.array_equal(stops, arrays[i].stops)):
                 content = cls.awkward.numpy.zeros(stops.max(), dtype=cls.awkward.numpy.float64)
-                arrays[i] = jaggedType[i](starts, stops, content) + arrays[i]    # invoke jagged broadcasting to align arrays
+                arrays[i] = jagged_type(starts, stops, content) + arrays[i]    # invoke jagged broadcasting to align arrays
 
         return arrays
 
