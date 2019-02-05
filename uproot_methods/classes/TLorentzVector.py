@@ -203,7 +203,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
     @property
     def rapidity(self):
-        return self.awkward.numpy.log((self.t + self.z) / (self.t - self.z)) / 2.0
+        return 0.5 * self.awkward.numpy.log((self.t + self.z) / (self.t - self.z))
 
     @property
     def unit(self):
@@ -279,6 +279,9 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         else:
             return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
 
+    def _to_cartesian(self):
+        return TLorentzVectorArray.from_cartesian(self.x,self.y,self.z,self.t)
+
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if "out" in kwargs:
             raise NotImplementedError("in-place operations not supported")
@@ -296,11 +299,12 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         if ufunc is self.awkward.numpy.add or ufunc is self.awkward.numpy.subtract:
             if not all(isinstance(x, (ArrayMethods, Methods)) for x in inputs):
                 raise TypeError("(arrays of) TLorentzVector can only be added to/subtracted from other (arrays of) TLorentzVector")
-            out = self.empty_like()
-            out["fX"] = getattr(ufunc, method)(*[x.x for x in inputs], **kwargs)
-            out["fY"] = getattr(ufunc, method)(*[x.y for x in inputs], **kwargs)
-            out["fZ"] = getattr(ufunc, method)(*[x.z for x in inputs], **kwargs)
-            out["fE"] = getattr(ufunc, method)(*[x.t for x in inputs], **kwargs)
+            cart_inputs = [x._to_cartesian() for x in inputs]
+            out = cart_inputs[0].empty_like()
+            out["fX"] = getattr(ufunc, method)(*[x.x for x in cart_inputs], **kwargs)
+            out["fY"] = getattr(ufunc, method)(*[x.y for x in cart_inputs], **kwargs)
+            out["fZ"] = getattr(ufunc, method)(*[x.z for x in cart_inputs], **kwargs)
+            out["fE"] = getattr(ufunc, method)(*[x.t for x in cart_inputs], **kwargs)
             return out
 
         elif ufunc is self.awkward.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, self.awkward.numpy.number)):
@@ -315,9 +319,86 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         else:
             return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
 
+class PtEtaPhiMassArrayMethods(ArrayMethods):
+    def _initObjectArray(self, table):
+        self.awkward.ObjectArray.__init__(self, table, lambda row: PtEtaPhiMassLorentzVector(row["fPt"], row["fEta"], row["fPhi"], row["fMass"]))
+        self.content.rowname = "PtEtaPhiMassLorentzVector"
+    
+    @property
+    def x(self):
+        return self._trymemo("x",lambda self: self.pt * self.awkward.numpy.cos(self.phi))
+    
+    @property
+    def y(self):
+        return self._trymemo("y",lambda self: self.pt * self.awkward.numpy.sin(self.phi))
+    
+    @property
+    def z(self):
+        return self._trymemo("z",lambda self: self.pt * self.awkward.numpy.sinh(self.eta))
+    
+    @property
+    def t(self):
+        return self._trymemo("t",lambda self: self.awkward.numpy.hypot(self.mass, self.p))
+
+    @property
+    def pt(self):
+        return self["fPt"]
+    
+    @property
+    def pt2(self):
+        return self["fPt"]**2
+    
+    @property
+    def perp(self):
+        return self["fPt"]
+    
+    @property
+    def perp2(self):
+        return self["fPt"]**2
+    
+    @property
+    def eta(self):
+        return self["fEta"]
+    
+    @property
+    def phi(self):
+        return self["fPhi"]
+    
+    @property
+    def mass(self):
+        return self["fMass"]
+
+    @property
+    def mass2(self):
+        return self["fMass"]**2
+    
+    @property
+    def mag(self):
+        return self["fMass"]
+
+    @property
+    def mag2(self):
+        return self["fMass"]**2
+
+    @property
+    def mt(self):
+        return self.awkward.numpy.sqrt(self.mt2)
+
+    @property
+    def mt2(self):
+        return self["fMass"]**2 + self["fPt"]**2
+
+    @property
+    def p(self):
+        return self._trymemo("p",lambda self: self["fPt"]*self.awkward.numpy.cosh(self["fEta"]))
+    
+    @property
+    def p2(self):
+        return self.p**2
+
 class Methods(Common, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
-
+    
     @property
     def p3(self):
         return self._fP
@@ -338,6 +419,9 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     def t(self):
         return self._fE
 
+    def _to_cartesian(self):
+        return TLorentzVector(self.x,self.y,self.z,self.t)
+    
     def __repr__(self):
         return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
 
@@ -348,23 +432,26 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
         return isinstance(other, Methods) and self.x == other.x and self.y == other.y and self.z == other.z and self.t == other.t
 
     def _scalar(self, operator, scalar, reverse=False):
+        cart = self._to_cartesian()
         if not isinstance(scalar, (numbers.Number, self.awkward.numpy.number)):
             raise TypeError("cannot {0} a TLorentzVector with a {1}".format(operator.__name__, type(scalar).__name__))
         if reverse:
-            return TLorentzVector(operator(scalar, self.x), operator(scalar, self.y), operator(scalar, self.z), operator(scalar, self.t))
+            return TLorentzVector(operator(scalar, cart.x), operator(scalar, cart.y), operator(scalar, cart.z), operator(scalar, cart.t))
         else:
-            return TLorentzVector(operator(self.x, scalar), operator(self.y, scalar), operator(self.z, scalar), operator(self.t, scalar))
+            return TLorentzVector(operator(cart.x, scalar), operator(cart.y, scalar), operator(cart.z, scalar), operator(cart.t, scalar))
 
     def _vector(self, operator, vector, reverse=False):
+        cart = self._to_cartesian()
         if not isinstance(vector, Methods):
             raise TypeError("cannot {0} a TLorentzVector with a {1}".format(operator.__name__, type(vector).__name__))
         if reverse:
-            return TLorentzVector(operator(vector.x, self.x), operator(vector.y, self.y), operator(vector.z, self.z), operator(vector.t, self.t))
+            return TLorentzVector(operator(vector.x, cart.x), operator(vector.y, cart.y), operator(vector.z, cart.z), operator(vector.t, cart.t))
         else:
-            return TLorentzVector(operator(self.x, vector.x), operator(self.y, vector.y), operator(self.z, vector.z), operator(self.t, vector.t))
+            return TLorentzVector(operator(cart.x, vector.x), operator(cart.y, vector.y), operator(cart.z, vector.z), operator(cart.t, vector.t))
 
     def _unary(self, operator):
-        return TLorentzVector(operator(self.x), operator(self.y), operator(self.z), operator(self.t))
+        cart = self._to_cartesian()
+        return TLorentzVector(operator(cart.x), operator(cart.y), operator(cart.z), operator(cart.t))
 
     @property
     def pt(self):
@@ -544,6 +631,112 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
     def __invert__(self):
         return self._unary(operator.invert)
 
+class PtEtaPhiMassMethods(Methods):
+    _arraymethods = PtEtaPhiMassArrayMethods
+    
+    @property
+    def pt(self):
+        return self._fPt
+    
+    @property
+    def eta(self):
+        return self._fEta
+    
+    @property
+    def phi(self):
+        return self._fPhi
+    
+    @property
+    def mass(self):
+        return self._fMass
+    
+    @property
+    def mag(self):
+        return self._fMass
+    
+    @property
+    def mag2(self):
+        return self._fMass**2
+    
+    @property
+    def mt(self):
+        out = self.mt2
+        if out >= 0:
+            return math.sqrt(out)
+        else:
+            return -math.sqrt(out)
+    
+    @property
+    def mt2(self):
+        return self._fMass**2 + self._fPt**2
+    
+    @property
+    def p3(self):
+        return uproot_methods.classes.TVector3.TVector3(self.x, self.y, self.z)
+    
+    @property
+    def x(self):
+        return self.pt * self.awkward.numpy.cos(self.phi)
+    
+    @property
+    def y(self):
+        return self.pt * self.awkward.numpy.sin(self.phi)
+    
+    @property
+    def z(self):
+        return self.pt * self.awkward.numpy.sinh(self.eta)
+    
+    @property
+    def t(self):
+        x = self.x
+        y = self.y
+        z = self.z
+        mass = self.mass
+        return self.awkward.numpy.sqrt(x*x + y*y + z*z + mass*mass*self.awkward.numpy.sign(mass))
+    
+    def __repr__(self):
+        return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fPt, self._fEta, self._fPhi, self._fMass)
+
+class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
+    def __init__(self, pt, eta, phi, mass):
+        self._initObjectArray(self.awkward.Table())
+        self["fPt"]   = pt
+        self["fEta"]  = eta
+        self["fPhi"]  = phi
+        self["fMass"] = mass
+
+    @property
+    def pt(self):
+        return self["fPt"]
+    
+    @pt.setter
+    def pt(self, value):
+        self["fPt"] = value
+
+    @property
+    def eta(self):
+        return self["fEta"]
+    
+    @eta.setter
+    def eta(self, value):
+        self["fEta"] = value
+
+    @property
+    def phi(self):
+        return self["fPhi"]
+    
+    @phi.setter
+    def phi(self, value):
+        self["fPhi"] = value
+
+    @property
+    def mass(self):
+        return self["fMass"]
+    
+    @mass.setter
+    def mass(self, value):
+        self["fMass"] = value
+
 class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, x, y, z, t):
         self._initObjectArray(self.awkward.Table())
@@ -604,16 +797,8 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
 
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
-        wrap, (pt, eta, phi, mass) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((pt, eta, phi, mass)))
-        x = pt * cls.awkward.numpy.cos(phi)
-        y = pt * cls.awkward.numpy.sin(phi)
-        z = pt * cls.awkward.numpy.sinh(eta)
-        p3 = uproot_methods.classes.TVector3.TVector3Array(x, y, z)
-        out = cls.from_p3(p3, cls.awkward.numpy.sqrt(x*x + y*y + z*z + mass*mass*cls.awkward.numpy.sign(mass)))
-        out._memo_pt = pt
-        out._memo_eta = eta
-        out._memo_phi = phi
-        out._memo_mass = mass
+        wrap, (pt, eta, phi, mass) = cls._unwrap_jagged(PtEtaPhiMassArrayMethods, cls._normalize_arrays((pt, eta, phi, mass)))
+        out = PtEtaPhiMassLorentzVectorArray(pt,eta,phi,mass)
         return wrap(out)
 
     @property
@@ -656,6 +841,45 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
     def E(self, value):
         self["fE"] = value
 
+class PtEtaPhiMassLorentzVector(PtEtaPhiMassMethods):
+    def __init__(self, pt, eta, phi, mass):
+        self._fPt   = pt
+        self._fEta  = eta
+        self._fPhi  = phi
+        self._fMass = mass
+    
+    @property
+    def pt(self):
+        return self._fPt
+    
+    @pt.setter
+    def pt(self,value):
+        self._fPt = value
+                                           
+    @property
+    def eta(self):
+        return self._fEta
+                                       
+    @eta.setter
+    def eta(self, value):
+        self._fEta = value
+                                       
+    @property
+    def phi(self):
+        return self._fPhi
+                                       
+    @phi.setter
+    def phi(self, value):
+        self._fPhi = value
+                                       
+    @property
+    def mass(self):
+        return self._fMass
+                                       
+    @mass.setter
+    def mass(self, value):
+        self._fMass = value
+                                       
 class TLorentzVector(Methods):
     def __init__(self, x, y, z, t):
         self._fP = uproot_methods.classes.TVector3.TVector3(x, y, z)
@@ -693,8 +917,7 @@ class TLorentzVector(Methods):
     
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
-        tmp = cls.from_ptetaphi(pt, eta, phi, 0)
-        return cls.from_xyzm(tmp.x, tmp.y, tmp.z, mass)
+        return PtEtaPhiMassLorentzVector(pt,eta,phi,mass)
 
     @property
     def x(self):
