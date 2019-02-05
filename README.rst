@@ -29,10 +29,10 @@ or install with `conda <https://conda.io/en/latest/miniconda.html>`__:
     conda config --add channels conda-forge   # if you haven't added conda-forge already
     conda install uproot-methods
 
-The pip installer automatically installs strict dependencies; the conda installer installs optional dependencies, too.
+Both installers automatically install the dependencies.
 
-Strict dependencies:
---------------------
+Dependencies:
+-------------
 
 - `numpy <https://scipy.org/install.html>`__ (1.13.1+)
 - `awkward-array <https://github.com/scikit-hep/awkward-array>`__ (0.8.0+)
