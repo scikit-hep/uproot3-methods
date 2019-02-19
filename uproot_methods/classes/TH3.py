@@ -52,11 +52,11 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def low(self):
-        return self.xlow, self.ylow
+        return self.xlow, self.ylow, self.zlow
 
     @property
     def high(self):
-        return self.xhigh, self.yhigh
+        return self.xhigh, self.yhigh, self.zlow
 
     @property
     def xlow(self):
