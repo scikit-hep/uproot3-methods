@@ -201,8 +201,8 @@ class Methods(uproot_methods.base.ROOTMethods):
     def allvalues(self):
         dtype = getattr(self, "_dtype", numpy.dtype(numpy.float64))
         v = numpy.array(self[:], dtype=dtype.newbyteorder("="))
-        return v.reshape(self.xnumbins + 2, self.ynumbins + 2,
-                         self.znumbins + 2)
+        v = v.reshape(self.znumbins + 2, self.ynumbins + 2, self.xnumbins + 2)
+        return v.T
 
     @property
     def variances(self):
@@ -215,8 +215,8 @@ class Methods(uproot_methods.base.ROOTMethods):
             v = numpy.array(self, dtype=numpy.float64)
         else:
             v = numpy.array(self._fSumw2, dtype=numpy.float64)
-        return v.reshape(self.xnumbins + 2, self.ynumbins + 2,
-                         self.znumbins + 2)
+        v = v.reshape(self.znumbins + 2, self.ynumbins + 2, self.xnumbins + 2)
+        return v.T
 
     def numpy(self):
         return (self.values,) + self.edges
