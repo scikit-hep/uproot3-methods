@@ -177,10 +177,10 @@ class Methods(uproot_methods.base.ROOTMethods):
         return v.T
 
     def numpy(self):
-        return (self.values,) + self.edges
+        return (self.values, [self.edges])
 
     def allnumpy(self):
-        return (self.allvalues,) + self.alledges
+        return (self.allvalues, [self.alledges])
 
     def interval(self, index, axis):
         if axis == "x":
