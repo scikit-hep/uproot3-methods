@@ -32,6 +32,9 @@ import math
 import numbers
 import operator
 
+import awkward.array.jagged
+import awkward.array.objects
+
 import uproot_methods.base
 import uproot_methods.common.TVector
 import uproot_methods.classes.TVector3
@@ -145,15 +148,16 @@ class Common(object):
 class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
-        self.content.rowname = "TLorentzVector"
 
     @property
     def p3(self):
         out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
-        if isinstance(self, self.awkward.JaggedArray):
-            out.__class__ = type("JaggedArrayMethods", (self.awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
-        else:
-            out.__class__ = type("ObjectArrayMethods", (self.awkward.ObjectArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+        node = out
+        while isinstance(node, awkward.array.jagged.JaggedArray):
+            node.__class__ = type("JaggedArrayMethods", (self.awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            node = node.content
+        if isinstance(node, awkward.array.objects.ObjectArray):
+            node.__class__ = type("ObjectArrayMethods", (self.awkward.ObjectArray, uproot_methods.classes.TVector3.ArrayMethods), {})
         out["fX"] = self.x
         out["fY"] = self.y
         out["fZ"] = self.z
@@ -233,7 +237,8 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         del mask
 
         bp = self.p3.dot(p3)
-        v = self.p3 + gamma2*bp*p3 + gamma*p3*self.t
+
+        v = self.p3 + gamma2*bp*p3 + self.t*gamma*p3
         out = self.empty_like()
         out["fX"] = v.x
         out["fY"] = v.y
@@ -322,7 +327,6 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 class PtEtaPhiMassArrayMethods(ArrayMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: PtEtaPhiMassLorentzVector(row["fPt"], row["fEta"], row["fPhi"], row["fMass"]))
-        self.content.rowname = "PtEtaPhiMassLorentzVector"
     
     @property
     def x(self):

@@ -105,7 +105,6 @@ class Common(object):
 class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
-        self.content.rowname = "TVector3"
 
     @property
     def x(self):
