@@ -703,6 +703,8 @@ class PtEtaPhiMassMethods(Methods):
 
 class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, pt, eta, phi, mass):
+        if isinstance(pt, awkward.array.jagged.JaggedArray) or isinstance(eta, awkward.array.jagged.JaggedArray) or isinstance(phi, awkward.array.jagged.JaggedArray) or isinstance(mass, awkward.array.jagged.JaggedArray):
+            raise TypeError("PtEtaPhiMassLorentzVectorArray constructor arguments must not be jagged; use TLorentzVectorArray.from_ptetaphim for jaggedness-handling")
         self._initObjectArray(self.awkward.Table())
         self["fPt"]   = pt
         self["fEta"]  = eta
@@ -743,6 +745,8 @@ class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.ba
 
 class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, x, y, z, t):
+        if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray) or isinstance(z, awkward.array.jagged.JaggedArray) or isinstance(t, awkward.array.jagged.JaggedArray):
+            raise TypeError("TLorentzVectorArray constructor arguments must not be jagged; use TLorentzVectorArray.from_cartesian for jaggedness-handling")
         self._initObjectArray(self.awkward.Table())
         self["fX"] = x
         self["fY"] = y
@@ -847,10 +851,10 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
 
 class PtEtaPhiMassLorentzVector(PtEtaPhiMassMethods):
     def __init__(self, pt, eta, phi, mass):
-        self._fPt   = pt
-        self._fEta  = eta
-        self._fPhi  = phi
-        self._fMass = mass
+        self._fPt   = float(pt)
+        self._fEta  = float(eta)
+        self._fPhi  = float(phi)
+        self._fMass = float(mass)
     
     @property
     def pt(self):
@@ -886,8 +890,8 @@ class PtEtaPhiMassLorentzVector(PtEtaPhiMassMethods):
                                        
 class TLorentzVector(Methods):
     def __init__(self, x, y, z, t):
-        self._fP = uproot_methods.classes.TVector3.TVector3(x, y, z)
-        self._fE = t
+        self._fP = uproot_methods.classes.TVector3.TVector3(float(x), float(y), float(z))
+        self._fE = float(t)
 
     @classmethod
     def origin(cls):

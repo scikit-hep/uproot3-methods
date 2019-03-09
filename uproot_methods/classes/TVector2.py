@@ -31,6 +31,8 @@
 import math
 import numbers
 
+import awkward.array.jagged
+
 import uproot_methods.common.TVector
 import uproot_methods.base
     
@@ -136,6 +138,8 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
 
 class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, x, y):
+        if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray):
+            raise TypeError("TVector2Array constructor arguments must not be jagged; use TVector2.from_cartesian for jaggedness-handling")
         self._initObjectArray(self.awkward.Table())
         self["fX"] = x
         self["fY"] = y
@@ -179,8 +183,8 @@ class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.Object
 
 class TVector2(Methods):
     def __init__(self, x, y):
-        self._fX = x
-        self._fY = y
+        self._fX = float(x)
+        self._fY = float(y)
 
     @classmethod
     def origin(cls):
