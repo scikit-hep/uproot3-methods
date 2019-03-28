@@ -58,6 +58,9 @@ def towriteable(obj):
         elif any(x == ("uproot_methods.classes.TH1", "Methods") for x in types(obj.__class__, obj)):
             return (None, None, "uproot.write.objects.TH1", "TH1")
 
+        elif any(x == ("TH1", "Methods") for x in types(obj.__class__, obj)):
+            return (None, None, "uproot.write.objects.TH1", "TH1")
+
         else:
             raise TypeError("type {0} from module {1} is not writeable by uproot".format(obj.__class__.__name__, obj.__class__.__module__))
 
