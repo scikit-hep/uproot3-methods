@@ -7,7 +7,9 @@ Pythonic mix-ins for ROOT classes.
 
 .. inclusion-marker-1-5-do-not-remove
 
-(...)
+This package is typically used as a dependency for `uproot <https://github.com/scikit-hep/uproot>`__, to define methods on the classes that are automatically generated from ROOT files. This includes histograms (TH*) and physics objects like TLorentzVectors. The reason it's a separate library is so that we can add physics-specific functionality on a shorter timescale than we can update uproot itself, which is purely an I/O package.
+
+Occasionally, this library is used without uproot, as a way to make arrays of TLorentzVectors.
 
 .. inclusion-marker-2-do-not-remove
 
@@ -18,28 +20,26 @@ Install uproot-methods like any other Python package:
 
 .. code-block:: bash
 
-    pip install uproot-methods
+    pip install uproot-methods                # maybe with sudo or --user, or in virtualenv
 
-or similar (use ``sudo``, ``--user``, ``virtualenv``, or pip-in-conda if you wish).
+or install with `conda <https://conda.io/en/latest/miniconda.html>`__:
 
-Strict dependencies:
-====================
+.. code-block:: bash
 
-- `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (2.7+, 3.4+)
+    conda config --add channels conda-forge   # if you haven't added conda-forge already
+    conda install uproot-methods
 
-The following are installed automatically when you install uproot with pip:
+Both installers automatically install the dependencies.
 
-- `Numpy <https://scipy.org/install.html>`__ (1.13.1+)
-- `awkward-array <https://pypi.org/project/awkward>`__ to manipulate data from non-flat TTrees, such as jagged arrays (`part of Scikit-HEP <https://github.com/scikit-hep/awkward-array>`__)
+Dependencies:
+-------------
+
+- `numpy <https://scipy.org/install.html>`__ (1.13.1+)
+- `awkward-array <https://github.com/scikit-hep/awkward-array>`__ (0.8.0+)
 
 .. inclusion-marker-3-do-not-remove
-
-Tutorial
-========
-
-This library is typically installed as a dependency for [uproot](https://github.com/scikit-hep/uproot).
 
 Reference documentation
 =======================
 
-(...)
+TBD.

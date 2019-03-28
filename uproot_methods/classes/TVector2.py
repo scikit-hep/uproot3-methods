@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, DIANA-HEP
+# Copyright (c) 2019, IRIS-HEP
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -31,8 +31,7 @@
 import math
 import numbers
 
-import awkward
-import awkward.util
+import awkward.array.jagged
 
 import uproot_methods.common.TVector
 import uproot_methods.base
@@ -48,8 +47,7 @@ class Common(object):
 
 class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
-        awkward.ObjectArray.__init__(self, table, lambda row: TVector2(row["fX"], row["fY"]))
-        self.content.rowname = "TVector2"
+        self.awkward.ObjectArray.__init__(self, table, lambda row: TVector2(row["fX"], row["fY"]))
 
     @property
     def x(self):
@@ -59,18 +57,27 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
     def y(self):
         return self["fY"]
 
+    def sum(self):
+        if isinstance(self, self.awkward.JaggedArray):
+            return TVector2Array.from_cartesian(self.x.sum(), self.y.sum())
+        else:
+            return TVector2(self.x.sum(), self.y.sum())
+
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if "out" in kwargs:
+            raise NotImplementedError("in-place operations not supported")
+
         if method != "__call__":
             return NotImplemented
 
         inputs = list(inputs)
         for i in range(len(inputs)):
-            if isinstance(inputs[i], awkward.util.numpy.ndarray) and inputs[i].dtype == awkward.util.numpy.dtype(object) and len(inputs[i]) > 0:
-                idarray = awkward.util.numpy.frombuffer(inputs[i], dtype=awkward.util.numpy.uintp)
+            if isinstance(inputs[i], self.awkward.numpy.ndarray) and inputs[i].dtype == self.awkward.numpy.dtype(object) and len(inputs[i]) > 0:
+                idarray = self.awkward.numpy.frombuffer(inputs[i], dtype=self.awkward.numpy.uintp)
                 if (idarray == idarray[0]).all():
                     inputs[i] = inputs[i][0]
 
-        if ufunc is awkward.util.numpy.add or ufunc is awkward.util.numpy.subtract:
+        if ufunc is self.awkward.numpy.add or ufunc is self.awkward.numpy.subtract:
             if not all(isinstance(x, (ArrayMethods, Methods)) for x in inputs):
                 raise TypeError("(arrays of) TVector2 can only be added to/subtracted from other (arrays of) TVector2")
             out = self.empty_like()
@@ -78,17 +85,17 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
             out["fY"] = getattr(ufunc, method)(*[x.y for x in inputs], **kwargs)
             return out
 
-        elif ufunc is awkward.util.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, awkward.util.numpy.number)):
+        elif ufunc is self.awkward.numpy.power and len(inputs) >= 2 and isinstance(inputs[1], (numbers.Number, self.awkward.numpy.number)):
             if inputs[1] == 2:
                 return self.mag2
             else:
                 return self.mag2**(0.5*inputs[1])
 
-        elif ufunc is awkward.util.numpy.absolute:
+        elif ufunc is self.awkward.numpy.absolute:
             return self.mag
 
         else:
-            return awkward.ObjectArray.__array_ufunc__(self, ufunc, method, *inputs, **kwargs)
+            return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
 
 class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
@@ -111,7 +118,7 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         return isinstance(other, Methods) and self.x == other.x and self.y == other.y
 
     def _scalar(self, operator, scalar, reverse=False):
-        if not isinstance(scalar, (numbers.Number, awkward.util.numpy.number)):
+        if not isinstance(scalar, (numbers.Number, self.awkward.numpy.number)):
             raise TypeError("cannot {0} a TVector2 with a {1}".format(operator.__name__, type(scalar).__name__))
         if reverse:
             return TVector2(operator(scalar, self.x), operator(scalar, self.y))
@@ -129,26 +136,34 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
     def _unary(self, operator):
         return TVector2(operator(self.x), operator(self.y))
 
-class TVector2Array(ArrayMethods, awkward.ObjectArray):
+class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, x, y):
-        self._initObjectArray(awkward.Table())
+        if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray):
+            raise TypeError("TVector2Array constructor arguments must not be jagged; use TVector2.from_cartesian for jaggedness-handling")
+        self._initObjectArray(self.awkward.Table())
         self["fX"] = x
         self["fY"] = y
 
     @classmethod
     def origin(cls, shape, dtype=None):
         if dtype is None:
-            dtype = awkward.util.numpy.float64
-        return cls(awkward.util.numpy.zeros(shape, dtype=dtype), awkward.util.numpy.zeros(shape, dtype=dtype))
+            dtype = cls.awkward.numpy.float64
+        return cls(cls.awkward.numpy.zeros(shape, dtype=dtype), cls.awkward.numpy.zeros(shape, dtype=dtype))
 
     @classmethod
     def origin_like(cls, array):
-        return cls.origin(array.shape, array.dtype)
+        return array * 0.0
 
     @classmethod
-    def from_circular(cls, rho, phi):
-        return cls(rho * awkward.util.numpy.cos(phi),
-                   rho * awkward.util.numpy.sin(phi))
+    def from_cartesian(cls, x, y):
+        wrap, (x, y) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((x, y)))
+        return wrap(cls(x, y))
+
+    @classmethod
+    def from_polar(cls, rho, phi):
+        wrap, (rho, phi) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((rho, phi)))
+        return wrap(cls(rho * cls.awkward.numpy.cos(phi),
+                        rho * cls.awkward.numpy.sin(phi)))
 
     @property
     def x(self):
@@ -168,15 +183,15 @@ class TVector2Array(ArrayMethods, awkward.ObjectArray):
 
 class TVector2(Methods):
     def __init__(self, x, y):
-        self._fX = x
-        self._fY = y
+        self._fX = float(x)
+        self._fY = float(y)
 
     @classmethod
     def origin(cls):
         return cls(0.0, 0.0)
 
     @classmethod
-    def from_circular(cls, rho, phi):
+    def from_polar(cls, rho, phi):
         return cls(rho * math.cos(phi),
                    rho * math.sin(phi))
 

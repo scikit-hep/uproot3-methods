@@ -1,22 +1,22 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, DIANA-HEP
+# Copyright (c) 2019, IRIS-HEP
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
-# 
+#
 # * Redistributions in binary form must reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
-# 
+#
 # * Neither the name of the copyright holder nor the names of its
 #   contributors may be used to endorse or promote products derived from
 #   this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,6 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numbers
+import math
 import sys
 
 import numpy
@@ -44,7 +45,7 @@ class Methods(uproot_methods.base.ROOTMethods):
 
     @property
     def name(self):
-        return self._fName
+        return getattr(self, "_fName", None)
 
     @property
     def title(self):
@@ -71,20 +72,62 @@ class Methods(uproot_methods.base.ROOTMethods):
         return self[-1]
 
     @property
+    def edges(self):
+        axis = self._fXaxis
+        if len(getattr(axis, "_fXbins", [])) > 0:
+            return numpy.array(axis._fXbins)
+        else:
+            return numpy.linspace(axis._fXmin, axis._fXmax, axis._fNbins + 1)
+
+    @property
+    def alledges(self):
+        axis = self._fXaxis
+        v = numpy.empty(axis._fNbins + 3)
+        v[0] = -numpy.inf
+        v[-1] = numpy.inf
+        v[1:-1] = self.edges
+        return v
+
+    @property
+    def bins(self):
+        edges = self.edges
+        out = numpy.empty((len(edges) - 1, 2))
+        out[:, 0] = edges[:-1]
+        out[:, 1] = edges[1:]
+        return out
+
+    @property
+    def allbins(self):
+        edges = self.alledges
+        out = numpy.empty((len(edges) - 1, 2))
+        out[:, 0] = edges[:-1]
+        out[:, 1] = edges[1:]
+        return out
+
+    @property
     def values(self):
-        return self[1:-1]
+        return self.allvalues[1:-1]
 
     @property
     def allvalues(self):
-        return self[:]
+        return numpy.array(self, dtype=getattr(self, "_dtype", numpy.dtype(numpy.float64)).newbyteorder("="))
 
     @property
     def variances(self):
-        return self._fSumw2[1:-1]
+        return self.allvariances[1:-1]
 
     @property
     def allvariances(self):
-        return self._fSumw2[:]
+        if len(getattr(self, "_fSumw2", [])) != len(self):
+            return numpy.array(self, dtype=numpy.float64)
+        else:
+            return numpy.array(self._fSumw2, dtype=numpy.float64)
+
+    def numpy(self):
+        return self.values, self.edges
+
+    def allnumpy(self):
+        return self.allvalues, self.alledges
 
     def interval(self, index):
         if index < 0:
@@ -96,21 +139,11 @@ class Methods(uproot_methods.base.ROOTMethods):
             return (float("-inf"), low)
         elif index == len(self) - 1:
             return (high, float("inf"))
-        elif len(self._fXaxis._fXbins) == self._fXaxis._fNbins + 1:
+        elif len(getattr(self._fXaxis, "_fXbins", [])) == self._fXaxis._fNbins + 1:
             return (self._fXaxis._fXbins[index - 1], self._fXaxis._fXbins[index])
         else:
             norm = (high - low) / self._fXaxis._fNbins
             return (index - 1)*norm + low, index*norm + low
-
-    def index(self, data):
-        low = self._fXaxis._fXmin
-        high = self._fXaxis._fXmax
-        if data < low:
-            return 0
-        elif data >= high:
-            return len(self) - 1
-        elif not math.isnan(data):
-            return int(math.floor(self._fXaxis._fNbins * (data - low) / (high - low))) + 1
 
     @property
     def xlabels(self):
@@ -186,29 +219,108 @@ class Methods(uproot_methods.base.ROOTMethods):
             stream.write(out)
             stream.write("\n")
 
-    def numpy(self):
-        low = self._fXaxis._fXmin
-        high = self._fXaxis._fXmax
-        norm = (high - low) / self._fXaxis._fNbins
-        freq = numpy.array(self.values, dtype=self._dtype.newbyteorder("="))
-        edges = numpy.array([i*norm + low for i in range(self.numbins + 1)])
-        return freq, edges
+    def pandas(self, underflow=True, overflow=True, variance=True):
+        import pandas
+        freq = numpy.array(self.allvalues, dtype=getattr(self, "_dtype", numpy.dtype(numpy.float64)).newbyteorder("="))
+
+        if not underflow and not overflow:
+            freq = freq[1:-1]
+        elif not underflow:
+            freq = freq[1:]
+        elif not overflow:
+            freq = freq[:-1]
+
+        edges = numpy.empty(self._fXaxis._fNbins + 3, dtype=numpy.float64)
+        edges[0] = -numpy.inf
+        edges[-1] = numpy.inf
+
+        if getattr(self._fXaxis, "_fXbins", None):
+            edges[1:-1] = numpy.array(self._fXaxis._fXbins)
+        else:
+            edges[1:-1] = numpy.linspace(self._fXaxis._fXmin, self._fXaxis._fXmax, self._fXaxis._fNbins + 1)
+
+        if not underflow and not overflow:
+            edges = edges[1:-1]
+        elif not underflow:
+            edges = edges[1:]
+        elif not overflow:
+            edges = edges[:-1]
+
+        if getattr(self, "_fTitle", b"") == b"":
+            name = None
+        else:
+            name = self._fTitle.decode("utf-8", "ignore")
+
+        lefts, rights = edges[:-1], edges[1:]
+
+        nonzero = (freq != 0.0)
+        index = pandas.IntervalIndex.from_arrays(lefts[nonzero], rights[nonzero], closed="left", name=name)
+
+        data = {"count": freq[nonzero]}
+        columns = ["count"]
+
+        if variance:
+            if getattr(self, "_fSumw2", None):
+                sumw2 = self._fSumw2
+                if not underflow and not overflow:
+                    sumw2 = sumw2[1:-1]
+                elif not underflow:
+                    sumw2 = sumw2[1:]
+                elif not overflow:
+                    sumw2 = sumw2[:-1]
+                data["variance"] = numpy.array(sumw2)[nonzero]
+            else:
+                data["variance"] = data["count"]
+            columns.append("variance")
+
+        return pandas.DataFrame(index=index, data=data, columns=columns)
 
     def physt(self):
         import physt.binnings
         import physt.histogram1d
-        low = self._fXaxis._fXmin
-        high = self._fXaxis._fXmax
-        binwidth = (high - low) / self._fXaxis._fNbins
-        freq = numpy.array(self.allvalues, dtype=self._dtype.newbyteorder("="))
+        freq = numpy.array(self.allvalues, dtype=getattr(self, "_dtype", numpy.dtype(numpy.float64)).newbyteorder("="))
+        if getattr(self._fXaxis, "_fXbins", None):
+            binning = physt.binnings.NumpyBinning(numpy.array(self._fXaxis._fXbins))
+        else:
+            low = self._fXaxis._fXmin
+            high = self._fXaxis._fXmax
+            binwidth = (high - low) / self._fXaxis._fNbins
+            binning = physt.binnings.FixedWidthBinning(binwidth, bin_count=self._fXaxis._fNbins, min=low)
         return physt.histogram1d.Histogram1D(
-            physt.binnings.FixedWidthBinning(binwidth,
-                                             bin_count=self._fXaxis._fNbins,
-                                             min=low),
+            binning,
             frequencies=freq[1:-1],
             underflow=freq[0],
             overflow=freq[-1],
             name=getattr(self, "_fTitle", b"").decode("utf-8", "ignore"))
+
+    def hepdata(self, independent={"name": None, "units": None}, dependent={"name": "counts", "units": None}, qualifiers=[], yamloptions={}):
+        if independent["name"] is None and getattr(self, "_fTitle", b""):
+            independent = dict(independent)
+            if isinstance(self._fTitle, bytes):
+                independent["name"] = self._fTitle.decode("utf-8", "ignore")
+            else:
+                independent["name"] = self._fTitle
+
+        if getattr(self._fXaxis, "_fXbins", None):
+            independent_values = [{"low": float(low), "high": float(high)} for low, high in zip(self._fXaxis._fXbins[:-1], self._fXaxis._fXbins[1:])]
+        else:
+            low = self._fXaxis._fXmin
+            high = self._fXaxis._fXmax
+            norm = (high - low) / self._fXaxis._fNbins
+            independent_values = [{"low": float(i*norm + low), "high": float((i + 1)*norm + low)} for i in range(self.numbins)]
+
+        if getattr(self, "_fSumw2", None):
+            dependent_values = [{"value": float(value), "errors": [{"symerror": math.sqrt(variance), "label": "stat"}]} for value, variance in zip(self.values, self.variances)]
+        else:
+            dependent_values = [{"value": float(value), "errors": [{"symerror": math.sqrt(value), "label": "stat"}]} for value in self.values]
+
+        out = {"independent_variables": [{"header": independent, "values": independent_values}], "dependent_variables": [{"header": dependent, "qualifiers": qualifiers, "values": dependent_values}]}
+
+        if yamloptions is None:
+            return out
+        else:
+            import yaml
+            return yaml.dump(out, **yamloptions)
 
 def _histtype(content):
     if issubclass(content.dtype.type, (numpy.bool_, numpy.bool)):
@@ -243,15 +355,17 @@ def from_numpy(histogram):
         pass
 
     class TAxis(object):
-        def __init__(self, fNbins, fXmin, fXmax, fXbins):
-            self._fNbins = fNbins
-            self._fXmin = fXmin
-            self._fXmax = fXmax
+        def __init__(self, edges):
+            self._fNbins = len(edges) - 1
+            self._fXmin = edges[0]
+            self._fXmax = edges[-1]
+            if numpy.array_equal(edges, numpy.linspace(self._fXmin, self._fXmax, len(edges), dtype=edges.dtype)):
+                self._fXbins = numpy.array([], dtype=">f8")
+            else:
+                self._fXbins = edges.astype(">f8")
 
     out = TH1.__new__(TH1)
-    out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1], None)
-    if not numpy.array_equal(edges, numpy.linspace(edges[0], edges[-1], len(edges), dtype=edges.dtype)):
-        out._fXaxis = edges.astype(">f8")
+    out._fXaxis = TAxis(edges)
 
     centers = (edges[:-1] + edges[1:]) / 2.0
     out._fEntries = out._fTsumw = out._fTsumw2 = content.sum()
@@ -269,6 +383,97 @@ def from_numpy(histogram):
     valuesarray[1:-1] = content
     valuesarray[0] = 0
     valuesarray[-1] = 0
+
+    out.extend(valuesarray)
+    out._fSumw2 = valuesarray ** 2
+
+    return out
+
+def from_pandas(histogram):
+    import pandas
+
+    histogram = histogram.sort_index(ascending=True, inplace=False)
+    if not histogram.index.is_non_overlapping_monotonic:
+        raise ValueError("intervals overlap; cannot form a histogram")
+
+    sparse = histogram.index[numpy.isfinite(histogram.index.left) & numpy.isfinite(histogram.index.right)]
+    if (sparse.right[:-1] == sparse.left[1:]).all():
+        dense = sparse
+    else:
+        pairs = numpy.empty(len(sparse) * 2, dtype=numpy.float64)
+        pairs[::2] = sparse.left
+        pairs[1::2] = sparse.right
+        nonempty = numpy.empty(len(pairs), dtype=numpy.bool_)
+        nonempty[:-1] = (pairs[1:] != pairs[:-1])
+        nonempty[-1] = True
+        dense = pandas.IntervalIndex.from_breaks(pairs[nonempty], closed="left")
+
+    densehist = pandas.DataFrame(index=dense.left).join(histogram.reindex(histogram.index.left))
+    densehist.fillna(0, inplace=True)
+
+    underflowhist = histogram[numpy.isinf(histogram.index.left)]
+    overflowhist = histogram[numpy.isinf(histogram.index.right)]
+
+    content = numpy.array(densehist["count"])
+
+    sumw2 = numpy.empty(len(content) + 2, dtype=numpy.float64)
+    if "variance" in densehist.columns:
+        sumw2source = "variance"
+    else:
+        sumw2source = "count"
+    sumw2[1:-1] = densehist[sumw2source]
+    if len(underflowhist) == 0:
+        sumw2[0] = 0
+    else:
+        sumw2[0] = underflowhist[sumw2source]
+    if len(overflowhist) == 0:
+        sumw2[-1] = 0
+    else:
+        sumw2[-1] = overflowhist[sumw2source]
+
+    edges = numpy.empty(len(densehist) + 1, dtype=numpy.float64)
+    edges[:-1] = dense.left
+    edges[-1] = dense.right[-1]
+
+    class TH1(Methods, list):
+        pass
+
+    class TAxis(object):
+        def __init__(self, fNbins, fXmin, fXmax):
+            self._fNbins = fNbins
+            self._fXmin = fXmin
+            self._fXmax = fXmax
+
+    out = TH1.__new__(TH1)
+    out._fXaxis = TAxis(len(edges) - 1, edges[0], edges[-1])
+    out._fXaxis._fXbins = edges
+
+    centers = (edges[:-1] + edges[1:]) / 2.0
+    out._fEntries = content.sum()
+    out._fTsumw = content.sum()
+    out._fTsumw2 = sumw2.sum()
+    out._fTsumwx = (content * centers).sum()
+    out._fTsumwx2 = (content * centers**2).sum()
+
+    if histogram.index.name is None:
+        out._fTitle = b""
+    elif isinstance(histogram.index.name, bytes):
+        out._fTitle = histogram.index.name
+    else:
+        out._fTitle = histogram.index.name.encode("utf-8", "ignore")
+
+    out._classname, content = _histtype(content)
+
+    valuesarray = numpy.empty(len(content) + 2, dtype=content.dtype)
+    valuesarray[1:-1] = content
+    if len(underflowhist) == 0:
+        valuesarray[0] = 0
+    else:
+        valuesarray[0] = underflowhist["count"]
+    if len(overflowhist) == 0:
+        valuesarray[-1] = 0
+    else:
+        valuesarray[-1] = overflowhist["count"]
 
     out.extend(valuesarray)
 
@@ -298,12 +503,15 @@ def from_physt(histogram):
                             histogram.binning.first_edge,
                             histogram.binning.last_edge)
         if not histogram.binning.is_regular():
-            out._fXaxis = histogram.binning.numpy_bins.astype(">f8")
+            out._fXaxis._fXbins = histogram.binning.numpy_bins.astype(">f8")
     else:
         raise NotImplementedError(histogram.binning)
 
     centers = histogram.bin_centers
     content = histogram.frequencies
+
+    out._fSumw2 = [0] + list(histogram.errors2) + [0]
+
     mean = histogram.mean()
     variance = histogram.variance()
     out._fEntries = content.sum()   # is there a #entries independent of weights?

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2018, DIANA-HEP
+# Copyright (c) 2019, IRIS-HEP
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -58,18 +58,17 @@ setup(name = "uproot-methods",
       version = get_version(),
       packages = find_packages(exclude = ["tests"]),
       scripts = [],
-      data_files = ["README.rst"],
       description = "Pythonic mix-ins for ROOT classes.",
       long_description = get_description(),
-      author = "Jim Pivarski (DIANA-HEP)",
-      author_email = "pivarski@fnal.gov",
-      maintainer = "Jim Pivarski (DIANA-HEP)",
-      maintainer_email = "pivarski@fnal.gov",
+      author = "Jim Pivarski (IRIS-HEP)",
+      author_email = "pivarski@princeton.edu",
+      maintainer = "Jim Pivarski (IRIS-HEP)",
+      maintainer_email = "pivarski@princeton.edu",
       url = "https://github.com/scikit-hep/uproot-methods",
       download_url = "https://github.com/scikit-hep/uproot-methods/releases",
       license = "BSD 3-clause",
       test_suite = "tests",
-      install_requires = ["numpy>=1.13.1", "awkward"],
+      install_requires = ["numpy>=1.13.1", "awkward>=0.8.0"],
       tests_require = [],
       classifiers = [
           "Development Status :: 4 - Beta",

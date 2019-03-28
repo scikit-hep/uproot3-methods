@@ -1,0 +1,5 @@
+jpivarski       Jim Pivarski            base package, infrastructure	
+demarley        Daniel Marley           TH2
+kratsg          Giordon Stark           access to sumw2 in TH1
+marinang        Matthieu Marinangeli    TGraph*
+henryiii        Henry Schreiner         added test and fixed bug in TVector3.cross
