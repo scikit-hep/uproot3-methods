@@ -61,10 +61,7 @@ def towriteable(obj):
         elif any(x == ("physt.histogram1d", "Histogram1D") for x in types(obj.__class__, obj)):
             return ("uproot_methods.classes.TH1", "from_physt", "uproot.write.objects.TH1", "TH1")
 
-        elif any(x == ("uproot_methods.classes.TH1", "Methods") for x in types(obj.__class__, obj)):
-            return (None, None, "uproot.write.objects.TH1", "TH1")
-
-        elif any(x == ("TH1", "Methods") for x in types(obj.__class__, obj)):
+        elif any(x == ("uproot_methods.classes.TH1", "Methods") or x == ("TH1", "Methods") for x in types(obj.__class__, obj)):
             return (None, None, "uproot.write.objects.TH1", "TH1")
 
         else:
