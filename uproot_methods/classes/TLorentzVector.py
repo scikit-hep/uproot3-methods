@@ -149,6 +149,16 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
 
+    def __awkward_persist__(self, ident, fill, prefix, suffix, schemasuffix, storage, compression, **kwargs):
+        self._valid()
+        x, y, z, t = self.x, self.y, self.z, self.t
+        return {"id": ident,
+                "call": ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_cartesian"],
+                "args": [fill(x, "TLorentzVectorArray.x", prefix, suffix, schemasuffix, storage, compression, **kwargs),
+                         fill(y, "TLorentzVectorArray.y", prefix, suffix, schemasuffix, storage, compression, **kwargs),
+                         fill(z, "TLorentzVectorArray.z", prefix, suffix, schemasuffix, storage, compression, **kwargs),
+                         fill(t, "TLorentzVectorArray.t", prefix, suffix, schemasuffix, storage, compression, **kwargs)]}
+
     @property
     def p3(self):
         out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
