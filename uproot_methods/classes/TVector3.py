@@ -108,6 +108,15 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
 
+    def __awkward_persist__(self, ident, fill, prefix, suffix, schemasuffix, storage, compression, **kwargs):
+        self._valid()
+        x, y, z = self.x, self.y, self.z
+        return {"id": ident,
+                "call": ["uproot_methods.classes.TVector3", "TVector3Array", "from_cartesian"],
+                "args": [fill(x, "TVector3Array.x", prefix, suffix, schemasuffix, storage, compression, **kwargs),
+                         fill(y, "TVector3Array.y", prefix, suffix, schemasuffix, storage, compression, **kwargs),
+                         fill(z, "TVector3Array.z", prefix, suffix, schemasuffix, storage, compression, **kwargs)]}
+
     @property
     def x(self):
         return self["fX"]
