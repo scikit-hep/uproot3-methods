@@ -46,4 +46,4 @@ install:
 build_script:
   - "pip install %NUMPY%"
   - "pip install pytest pytest-runner"
-  - "python setup.py pytest"
+  - "pytest -v tests"
