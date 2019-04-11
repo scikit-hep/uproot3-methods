@@ -13,7 +13,7 @@ import uproot_methods.base
 import uproot_methods.common.TVector
 import uproot_methods.classes.TVector3
 
-from uproot_methods.wrapjagged import wrapjaggedmethod
+from awkward.util import wrapjaggedmethod
 
 class Common(object):
     @property
@@ -731,11 +731,9 @@ class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.ba
 
 awkward = uproot_methods.base.ROOTMethods.awkward
 PtEtaPhiMassJaggedArrayMethods = PtEtaPhiMassArrayMethods.mixin(PtEtaPhiMassArrayMethods, awkward.JaggedArray)
+JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
 
 class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
-
-    jaggedtype = uproot_methods.base.ROOTMethods.awkward.JaggedArray
-    awkcls = ArrayMethods.mixin(ArrayMethods, jaggedtype)
 
     def __init__(self, x, y, z, t):
         if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray) or isinstance(z, awkward.array.jagged.JaggedArray) or isinstance(t, awkward.array.jagged.JaggedArray):
@@ -761,32 +759,31 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
 
     @classmethod
     def from_p3(cls, p3, t):
-        wrap, (x, y, z, t) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((p3.x, p3.y, p3.z, t)))
-        return wrap(cls(x, y, z, t))
+        return cls.from_cartesian(p3.x, p3.y, p3.z, t)
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_cartesian(cls, x, y, z, t):
-        wrap, (x, y, z, t) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((x, y, z, t)))
-        return wrap(cls(x, y, z, t))
+        return cls(x, y, z, t)
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_spherical(cls, r, theta, phi, t):
-        wrap, (r, theta, phi, t) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((r, theta, phi, t)))
-        return wrap(cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t))
+        return cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t)
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_cylindrical(cls, rho, phi, z, t):
-        wrap, (rho, phi, z, t) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((rho, phi, z, t)))
-        return wrap(cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t))
+        return cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t)
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_xyzm(cls, x, y, z, m):
-        wrap, (x, y, z, m) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((x, y, z, m)))
-        return wrap(cls(x, y, z, cls.awkward.numpy.sqrt(x*x + y*y + z*z + m*m*cls.awkward.numpy.sign(m))))
+        return cls(x, y, z, cls.awkward.numpy.sqrt(x*x + y*y + z*z + m*m*cls.awkward.numpy.sign(m)))
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_ptetaphi(cls, pt, eta, phi, energy):
-        wrap, (pt, eta, phi, energy) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((pt, eta, phi, energy)))
         out = cls(pt * cls.awkward.numpy.cos(phi),
                   pt * cls.awkward.numpy.sin(phi),
                   pt * cls.awkward.numpy.sinh(eta),
@@ -794,7 +791,7 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
         out._memo_pt = pt
         out._memo_eta = eta
         out._memo_phi = phi
-        return wrap(out)
+        return out
 
     @classmethod
     @wrapjaggedmethod(PtEtaPhiMassJaggedArrayMethods)

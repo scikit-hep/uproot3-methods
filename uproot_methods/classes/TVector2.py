@@ -9,6 +9,8 @@ import awkward.array.jagged
 
 import uproot_methods.common.TVector
 import uproot_methods.base
+
+from awkward.util import wrapjaggedmethod
     
 class Common(object):
     def dot(self, other):
@@ -118,9 +120,10 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
     def _unary(self, operator):
         return TVector2(operator(self.x), operator(self.y))
 
+awkward = uproot_methods.base.ROOTMethods.awkward
+JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
+
 class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
-    jaggedtype = uproot_methods.base.ROOTMethods.awkward.JaggedArray
-    awkcls = ArrayMethods.mixin(ArrayMethods, jaggedtype)
 
     def __init__(self, x, y):
         if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray):
@@ -140,15 +143,15 @@ class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.Object
         return array * 0.0
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_cartesian(cls, x, y):
-        wrap, (x, y) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((x, y)))
-        return wrap(cls(x, y))
+        return cls(x, y)
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_polar(cls, rho, phi):
-        wrap, (rho, phi) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((rho, phi)))
-        return wrap(cls(rho * cls.awkward.numpy.cos(phi),
-                        rho * cls.awkward.numpy.sin(phi)))
+        return cls(rho * cls.awkward.numpy.cos(phi),
+                   rho * cls.awkward.numpy.sin(phi))
 
     @property
     def x(self):

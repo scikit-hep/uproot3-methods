@@ -10,6 +10,8 @@ import awkward.array.jagged
 import uproot_methods.base
 import uproot_methods.common.TVector
 
+from awkward.util import wrapjaggedmethod
+
 class Common(object):
     def dot(self, other):
         out = self.x*other.x
@@ -230,9 +232,10 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
     def rotate_euler(self, phi=0, theta=0, psi=0):
         return TVector3(x, y, z)
 
+awkward = uproot_methods.base.ROOTMethods.awkward
+JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
+
 class TVector3Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
-    jaggedtype = uproot_methods.base.ROOTMethods.awkward.JaggedArray
-    awkcls = ArrayMethods.mixin(ArrayMethods, jaggedtype)
 
     def __init__(self, x, y, z):
         if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray) or isinstance(z, awkward.array.jagged.JaggedArray):
@@ -255,23 +258,21 @@ class TVector3Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.Object
         return array * 0.0
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_cartesian(cls, x, y, z):
-        wrap, (x, y, z) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((x, y, z)))
-        return wrap(cls(x, y, z))
+        return cls(x, y, z)
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_spherical(cls, r, theta, phi):
-        wrap, (r, theta, phi) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((r, theta, phi)))
-        return wrap(cls(r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.cos(phi),
-                        r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.sin(phi),
-                        r * cls.awkward.numpy.cos(theta)))
+        return cls(r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.cos(phi),
+                   r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.sin(phi),
+                   r * cls.awkward.numpy.cos(theta))
 
     @classmethod
+    @wrapjaggedmethod(JaggedArrayMethods)
     def from_cylindrical(cls, rho, phi, z):
-        wrap, (rho, phi, z) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((rho, phi, z)))
-        return wrap(cls(rho * cls.awkward.numpy.cos(phi),
-                        rho * cls.awkward.numpy.sin(phi),
-                        z))
+        return cls(rho * cls.awkward.numpy.cos(phi), rho * cls.awkward.numpy.sin(phi),z)
 
     @property
     def x(self):
