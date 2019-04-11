@@ -35,7 +35,7 @@ Dependencies:
 -------------
 
 - `numpy <https://scipy.org/install.html>`__ (1.13.1+)
-- `awkward-array <https://github.com/scikit-hep/awkward-array>`__ (0.8.0+)
+- `awkward-array <https://github.com/scikit-hep/awkward-array>`__ (0.9.0+)
 
 .. inclusion-marker-3-do-not-remove
 
