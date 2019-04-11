@@ -28,12 +28,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-try:
-    from collections.abc import Iterable
-except ImportError:
-    from collections import Iterable
 
 import awkward
+
+from uproot_methods.wrapjagged import normalize_arrays, unwrap_jagged
+
 
 class ROOTMethods(awkward.Methods):
     _arraymethods = None
@@ -45,60 +44,15 @@ class ROOTMethods(awkward.Methods):
 
     @classmethod
     def _normalize_arrays(cls, arrays):
-        length = None
-        for i in range(len(arrays)):
-            if isinstance(arrays[i], Iterable):
-                if length is None:
-                    length = len(arrays[i])
-                    break
-        if length is None:
-            raise TypeError("cannot construct an array if all arguments are scalar")
-
-        arrays = list(arrays)
-        jaggedtype = [cls.awkward.JaggedArray] * len(arrays)
-        starts, stops = None, None
-        for i in range(len(arrays)):
-            if starts is None and isinstance(arrays[i], cls.awkward.JaggedArray):
-                starts, stops = arrays[i].starts, arrays[i].stops
-
-            if isinstance(arrays[i], cls.awkward.JaggedArray):
-                jaggedtype[i] = type(arrays[i])
-
-            if not isinstance(arrays[i], Iterable):
-                arrays[i] = cls.awkward.numpy.full(length, arrays[i])
-
-            arrays[i] = cls.awkward.util.toarray(arrays[i], cls.awkward.numpy.float64)
-
-        if starts is None:
-            return arrays
-
-        for i in range(len(arrays)):
-            if not isinstance(arrays[i], cls.awkward.JaggedArray) or not (cls.awkward.numpy.array_equal(starts, arrays[i].starts) and cls.awkward.numpy.array_equal(stops, arrays[i].stops)):
-                content = cls.awkward.numpy.zeros(stops.max(), dtype=cls.awkward.numpy.float64)
-                arrays[i] = jaggedtype[i](starts, stops, content) + arrays[i]    # invoke jagged broadcasting to align arrays
-
-        return arrays
+        return normalize_arrays(cls, arrays)
 
     @classmethod
-    def _unwrap_jagged(cls, ArrayMethods, arrays):
-        if not isinstance(arrays[0], cls.awkward.JaggedArray):
-            return lambda x: x, arrays
-        else:
-            if ArrayMethods is None:
-                awkcls = arrays[0].JaggedArray
-            else:
-                awkcls = ArrayMethods.mixin(ArrayMethods, arrays[0].JaggedArray)
-            counts = arrays[0].counts.reshape(-1)
-            offsets = awkcls.counts2offsets(counts)
-            starts, stops = offsets[:-1], offsets[1:]
-            starts = starts.reshape(arrays[0].starts.shape[:-1] + (-1,))
-            stops = stops.reshape(arrays[0].stops.shape[:-1] + (-1,))
-            wrap, arrays = cls._unwrap_jagged(ArrayMethods, [x.flatten() for x in arrays])
-            return lambda x: awkcls(starts, stops, wrap(x)), arrays
+    def _unwrap_jagged(cls, awkcls, arrays):
+        return unwrap_jagged(cls, awkcls, arrays)
 
     def _trymemo(self, name, function):
         memoname = "_memo_" + name
-        wrap, (array,) = type(self)._unwrap_jagged(None, (self,))
+        wrap, (array,) = type(self)._unwrap_jagged(self.JaggedArray, (self,))
         if not hasattr(array, memoname):
             setattr(array, memoname, function(array))
         return wrap(getattr(array, memoname))
