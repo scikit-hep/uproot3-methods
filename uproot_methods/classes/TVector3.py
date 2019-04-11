@@ -257,6 +257,9 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         return TVector3(x, y, z)
 
 class TVector3Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
+    jaggedtype = uproot_methods.base.ROOTMethods.awkward.JaggedArray
+    awkcls = ArrayMethods.mixin(ArrayMethods, jaggedtype)
+
     def __init__(self, x, y, z):
         if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray) or isinstance(z, awkward.array.jagged.JaggedArray):
             raise TypeError("TVector3Array constructor arguments must not be jagged; use TVector3.from_cartesian for jaggedness-handling")
@@ -279,19 +282,19 @@ class TVector3Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.Object
 
     @classmethod
     def from_cartesian(cls, x, y, z):
-        wrap, (x, y, z) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((x, y, z)))
+        wrap, (x, y, z) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((x, y, z)))
         return wrap(cls(x, y, z))
 
     @classmethod
     def from_spherical(cls, r, theta, phi):
-        wrap, (r, theta, phi) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((r, theta, phi)))
+        wrap, (r, theta, phi) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((r, theta, phi)))
         return wrap(cls(r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.cos(phi),
                         r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.sin(phi),
                         r * cls.awkward.numpy.cos(theta)))
 
     @classmethod
     def from_cylindrical(cls, rho, phi, z):
-        wrap, (rho, phi, z) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((rho, phi, z)))
+        wrap, (rho, phi, z) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((rho, phi, z)))
         return wrap(cls(rho * cls.awkward.numpy.cos(phi),
                         rho * cls.awkward.numpy.sin(phi),
                         z))

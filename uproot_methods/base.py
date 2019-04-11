@@ -61,9 +61,6 @@ class ROOTMethods(awkward.Methods):
             if starts is None and isinstance(arrays[i], cls.awkward.JaggedArray):
                 starts, stops = arrays[i].starts, arrays[i].stops
 
-            if isinstance(arrays[i], cls.awkward.JaggedArray):
-                jaggedtype[i] = type(arrays[i])
-
             if not isinstance(arrays[i], Iterable):
                 arrays[i] = cls.awkward.numpy.full(length, arrays[i])
 
@@ -80,25 +77,21 @@ class ROOTMethods(awkward.Methods):
         return arrays
 
     @classmethod
-    def _unwrap_jagged(cls, ArrayMethods, arrays):
+    def _unwrap_jagged(cls, awkcls, arrays):
         if not isinstance(arrays[0], cls.awkward.JaggedArray):
             return lambda x: x, arrays
-        else:
-            if ArrayMethods is None:
-                awkcls = arrays[0].JaggedArray
-            else:
-                awkcls = ArrayMethods.mixin(ArrayMethods, arrays[0].JaggedArray)
-            counts = arrays[0].counts.reshape(-1)
-            offsets = awkcls.counts2offsets(counts)
-            starts, stops = offsets[:-1], offsets[1:]
-            starts = starts.reshape(arrays[0].starts.shape[:-1] + (-1,))
-            stops = stops.reshape(arrays[0].stops.shape[:-1] + (-1,))
-            wrap, arrays = cls._unwrap_jagged(ArrayMethods, [x.flatten() for x in arrays])
-            return lambda x: awkcls(starts, stops, wrap(x)), arrays
+
+        counts = arrays[0].counts.reshape(-1)
+        offsets = awkcls.counts2offsets(counts)
+        starts, stops = offsets[:-1], offsets[1:]
+        starts = starts.reshape(arrays[0].starts.shape[:-1] + (-1,))
+        stops = stops.reshape(arrays[0].stops.shape[:-1] + (-1,))
+        wrap, arrays = cls._unwrap_jagged(awkcls, [x.flatten() for x in arrays])
+        return lambda x: awkcls(starts, stops, wrap(x)), arrays
 
     def _trymemo(self, name, function):
         memoname = "_memo_" + name
-        wrap, (array,) = type(self)._unwrap_jagged(None, (self,))
+        wrap, (array,) = type(self)._unwrap_jagged(self.JaggedArray, (self,))
         if not hasattr(array, memoname):
             setattr(array, memoname, function(array))
         return wrap(getattr(array, memoname))

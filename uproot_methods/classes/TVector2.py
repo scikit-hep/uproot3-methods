@@ -145,6 +145,9 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         return TVector2(operator(self.x), operator(self.y))
 
 class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
+    jaggedtype = uproot_methods.base.ROOTMethods.awkward.JaggedArray
+    awkcls = ArrayMethods.mixin(ArrayMethods, jaggedtype)
+
     def __init__(self, x, y):
         if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray):
             raise TypeError("TVector2Array constructor arguments must not be jagged; use TVector2.from_cartesian for jaggedness-handling")
@@ -164,12 +167,12 @@ class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.Object
 
     @classmethod
     def from_cartesian(cls, x, y):
-        wrap, (x, y) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((x, y)))
+        wrap, (x, y) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((x, y)))
         return wrap(cls(x, y))
 
     @classmethod
     def from_polar(cls, rho, phi):
-        wrap, (rho, phi) = cls._unwrap_jagged(ArrayMethods, cls._normalize_arrays((rho, phi)))
+        wrap, (rho, phi) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((rho, phi)))
         return wrap(cls(rho * cls.awkward.numpy.cos(phi),
                         rho * cls.awkward.numpy.sin(phi)))
 
