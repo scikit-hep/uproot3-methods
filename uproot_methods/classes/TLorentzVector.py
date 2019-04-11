@@ -39,6 +39,8 @@ import uproot_methods.base
 import uproot_methods.common.TVector
 import uproot_methods.classes.TVector3
 
+from uproot_methods.wrapjagged import wrapjaggedmethod
+
 class Common(object):
     @property
     def E(self):
@@ -753,11 +755,13 @@ class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.ba
     def mass(self, value):
         self["fMass"] = value
 
+awkward = uproot_methods.base.ROOTMethods.awkward
+PtEtaPhiMassJaggedArrayMethods = PtEtaPhiMassArrayMethods.mixin(PtEtaPhiMassArrayMethods, awkward.JaggedArray)
+
 class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
 
     jaggedtype = uproot_methods.base.ROOTMethods.awkward.JaggedArray
     awkcls = ArrayMethods.mixin(ArrayMethods, jaggedtype)
-    fooclass = PtEtaPhiMassArrayMethods.mixin(PtEtaPhiMassArrayMethods, jaggedtype)
 
     def __init__(self, x, y, z, t):
         if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray) or isinstance(z, awkward.array.jagged.JaggedArray) or isinstance(t, awkward.array.jagged.JaggedArray):
@@ -819,10 +823,9 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
         return wrap(out)
 
     @classmethod
+    @wrapjaggedmethod(PtEtaPhiMassJaggedArrayMethods)
     def from_ptetaphim(cls, pt, eta, phi, mass):
-        wrap, (pt, eta, phi, mass) = cls._unwrap_jagged(cls.fooclass, cls._normalize_arrays((pt, eta, phi, mass)))
-        out = PtEtaPhiMassLorentzVectorArray(pt,eta,phi,mass)
-        return wrap(out)
+        return PtEtaPhiMassLorentzVectorArray(pt,eta,phi,mass)
 
     @property
     def x(self):
