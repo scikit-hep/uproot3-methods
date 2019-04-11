@@ -43,3 +43,10 @@ Reference documentation
 =======================
 
 TBD.
+
+Acknowledgements
+================
+
+Support for this work was provided by NSF cooperative agreement OAC-1836650 (IRIS-HEP), grant OAC-1450377 (DIANA/HEP) and PHY-1520942 (US-CMS LHC Ops).
+
+Thanks especially to the gracious help of `uproot-methods contributors <https://github.com/scikit-hep/uproot-methods/graphs/contributors>`__!
