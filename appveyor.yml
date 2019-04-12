@@ -46,5 +46,5 @@ install:
 build_script:
   - "pip install %NUMPY%"
   - "pip install pytest pytest-runner"
-  - "pip install awkward>=0.7.0"
+  - "pip install awkward>=0.9.0rc1"
   - "pytest -v tests"
