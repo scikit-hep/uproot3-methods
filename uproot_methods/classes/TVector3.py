@@ -6,11 +6,10 @@ import math
 import numbers
 
 import awkward.array.jagged
+import awkward.util
 
 import uproot_methods.base
 import uproot_methods.common.TVector
-
-from awkward.util import wrapjaggedmethod
 
 class Common(object):
     def dot(self, other):
@@ -174,6 +173,8 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
         else:
             return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
 
+JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
+
 class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
@@ -232,9 +233,6 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
     def rotate_euler(self, phi=0, theta=0, psi=0):
         return TVector3(x, y, z)
 
-awkward = uproot_methods.base.ROOTMethods.awkward
-JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
-
 class TVector3Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
 
     def __init__(self, x, y, z):
@@ -258,19 +256,19 @@ class TVector3Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.Object
         return array * 0.0
 
     @classmethod
-    @wrapjaggedmethod(JaggedArrayMethods)
+    @awkward.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_cartesian(cls, x, y, z):
         return cls(x, y, z)
 
     @classmethod
-    @wrapjaggedmethod(JaggedArrayMethods)
+    @awkward.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_spherical(cls, r, theta, phi):
         return cls(r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.cos(phi),
                    r * cls.awkward.numpy.sin(theta) * cls.awkward.numpy.sin(phi),
                    r * cls.awkward.numpy.cos(theta))
 
     @classmethod
-    @wrapjaggedmethod(JaggedArrayMethods)
+    @awkward.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_cylindrical(cls, rho, phi, z):
         return cls(rho * cls.awkward.numpy.cos(phi), rho * cls.awkward.numpy.sin(phi),z)
 

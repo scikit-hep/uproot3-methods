@@ -6,12 +6,11 @@ import math
 import numbers
 
 import awkward.array.jagged
+import awkward.util
 
 import uproot_methods.common.TVector
 import uproot_methods.base
 
-from awkward.util import wrapjaggedmethod
-    
 class Common(object):
     def dot(self, other):
         out = self.x*other.x
@@ -81,6 +80,8 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
         else:
             return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
 
+JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
+
 class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
@@ -120,9 +121,6 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
     def _unary(self, operator):
         return TVector2(operator(self.x), operator(self.y))
 
-awkward = uproot_methods.base.ROOTMethods.awkward
-JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
-
 class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
 
     def __init__(self, x, y):
@@ -143,12 +141,12 @@ class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.Object
         return array * 0.0
 
     @classmethod
-    @wrapjaggedmethod(JaggedArrayMethods)
+    @awkward.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_cartesian(cls, x, y):
         return cls(x, y)
 
     @classmethod
-    @wrapjaggedmethod(JaggedArrayMethods)
+    @awkward.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_polar(cls, rho, phi):
         return cls(rho * cls.awkward.numpy.cos(phi),
                    rho * cls.awkward.numpy.sin(phi))
