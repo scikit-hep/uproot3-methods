@@ -6,10 +6,11 @@ import math
 import numbers
 
 import awkward.array.jagged
+import awkward.util
 
 import uproot_methods.common.TVector
 import uproot_methods.base
-    
+
 class Common(object):
     def dot(self, other):
         out = self.x*other.x
@@ -79,6 +80,8 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
         else:
             return super(ArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
 
+JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
+
 class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
@@ -119,8 +122,6 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         return TVector2(operator(self.x), operator(self.y))
 
 class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
-    jaggedtype = uproot_methods.base.ROOTMethods.awkward.JaggedArray
-    awkcls = ArrayMethods.mixin(ArrayMethods, jaggedtype)
 
     def __init__(self, x, y):
         if isinstance(x, awkward.array.jagged.JaggedArray) or isinstance(y, awkward.array.jagged.JaggedArray):
@@ -140,15 +141,15 @@ class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.Object
         return array * 0.0
 
     @classmethod
+    @awkward.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_cartesian(cls, x, y):
-        wrap, (x, y) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((x, y)))
-        return wrap(cls(x, y))
+        return cls(x, y)
 
     @classmethod
+    @awkward.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_polar(cls, rho, phi):
-        wrap, (rho, phi) = cls._unwrap_jagged(cls.awkcls, cls._normalize_arrays((rho, phi)))
-        return wrap(cls(rho * cls.awkward.numpy.cos(phi),
-                        rho * cls.awkward.numpy.sin(phi)))
+        return cls(rho * cls.awkward.numpy.cos(phi),
+                   rho * cls.awkward.numpy.sin(phi))
 
     @property
     def x(self):
