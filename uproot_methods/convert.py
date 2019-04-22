@@ -6,7 +6,7 @@ import importlib
 
 # uses numpy, not awkward.numpy, because it operates on TFile data, not TTree data
 import numpy
-        
+
 def towriteable(obj):
     def identity(x):
         return x
@@ -27,16 +27,16 @@ def towriteable(obj):
             return (None, None, "uproot.write.objects.TObjString", "TObjString")
 
         elif isinstance(obj, tuple) and any(x[:2] == ("numpy", "ndarray") for x in types(obj[0].__class__, obj[0])) and any(x[:2] == ("numpy", "ndarray") for x in types(obj[1].__class__, obj[1])) and len(obj[0]) + 1 == len(obj[1]):
-            return ("uproot_methods.classes.TH1", "from_numpy", "uproot.write.objects.TH1", "TH1")
+            return ("uproot_methods.classes.TH1", "from_numpy", "uproot.write.objects.TH", "TH")
 
         elif any(x[:3] == ("pandas.core.frame", "DataFrame", "IntervalIndex") and "count" in x[3] for x in types(obj.__class__, obj)):
-            return ("uproot_methods.classes.TH1", "from_pandas", "uproot.write.objects.TH1", "TH1")
+            return ("uproot_methods.classes.TH1", "from_pandas", "uproot.write.objects.TH", "TH")
 
         elif any(x == ("physt.histogram1d", "Histogram1D") for x in types(obj.__class__, obj)):
-            return ("uproot_methods.classes.TH1", "from_physt", "uproot.write.objects.TH1", "TH1")
+            return ("uproot_methods.classes.TH1", "from_physt", "uproot.write.objects.TH", "TH")
 
         elif any(x == ("uproot_methods.classes.TH1", "Methods") or x == ("TH1", "Methods") for x in types(obj.__class__, obj)):
-            return (None, None, "uproot.write.objects.TH1", "TH1")
+            return (None, None, "uproot.write.objects.TH", "TH")
 
         else:
             raise TypeError("type {0} from module {1} is not writeable by uproot".format(obj.__class__.__name__, obj.__class__.__module__))
