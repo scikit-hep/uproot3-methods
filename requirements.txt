@@ -1,2 +1,2 @@
 numpy>=1.13.1
-awkward>=0.9.0
+awkward>=0.10.0
