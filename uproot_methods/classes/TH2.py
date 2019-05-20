@@ -196,3 +196,74 @@ class Methods(uproot_methods.base.ROOTMethods):
             return None
         else:
             return [str(x) for x in self._fYaxis._fLabels]
+
+def _histtype(content):
+    if issubclass(content.dtype.type, (numpy.bool_, numpy.bool)):
+        return b"TH2C", content.astype(">i1")
+    elif issubclass(content.dtype.type, numpy.int8):
+        return b"TH2C", content.astype(">i1")
+    elif issubclass(content.dtype.type, numpy.uint8) and content.max() <= numpy.iinfo(numpy.int8).max:
+        return b"TH2C", content.astype(">i1")
+    elif issubclass(content.dtype.type, numpy.uint8):
+        return b"TH2S", content.astype(">i2")
+    elif issubclass(content.dtype.type, numpy.int16):
+        return b"TH2S", content.astype(">i2")
+    elif issubclass(content.dtype.type, numpy.uint16) and content.max() <= numpy.iinfo(numpy.int16).max:
+        return b"TH2S", content.astype(">i2")
+    elif issubclass(content.dtype.type, numpy.uint16):
+        return b"TH2I", content.astype(">i4")
+    elif issubclass(content.dtype.type, numpy.int32):
+        return b"TH2I", content.astype(">i4")
+    elif issubclass(content.dtype.type, numpy.uint32) and content.max() <= numpy.iinfo(numpy.int32).max:
+        return b"TH2I", content.astype(">i4")
+    elif issubclass(content.dtype.type, numpy.integer) and numpy.iinfo(numpy.int32).min <= content.min() and content.max() <= numpy.iinfo(numpy.int32).max:
+        return b"TH2I", content.astype(">i4")
+    elif issubclass(content.dtype.type, numpy.float32):
+        return b"TH2F", content.astype(">f4")
+    else:
+        return b"TH2D", content.astype(">f8")
+
+def from_numpy(histogram):
+    content, xedges, yedges = histogram[:3]
+
+    class TH2(Methods, list):
+        pass
+
+    class TAxis(object):
+        def __init__(self, edges):
+            self._fNbins = len(edges) - 1
+            self._fXmin = edges[0]
+            self._fXmax = edges[-1]
+            if numpy.array_equal(edges, numpy.linspace(self._fXmin, self._fXmax, len(edges), dtype=edges.dtype)):
+                self._fXbins = numpy.array([], dtype=">f8")
+            else:
+                self._fXbins = edges.astype(">f8")
+
+    out = TH2.__new__(TH2)
+    out._fXaxis = TAxis(xedges)
+    out._fYaxis = TAxis(yedges)
+    out._fEntries = out._fTsumw = out._fTsumw2 = content.sum()
+
+    xcenters = (xedges[:-1] + xedges[1:]) / 2.
+    out._fTsumwx = xcenters.dot(content.sum(1))
+    out._fTsumwx2 = (xcenters**2).dot(content.sum(1))
+
+    ycenters = (yedges[:-1] + yedges[1:]) / 2.
+    out._fTsumwy = ycenters.dot(content.sum(0))
+    out._fTsumwy2 = (ycenters**2).dot(content.sum(0))
+
+    out._fTsumwxy = xcenters.dot(content).dot(ycenters)
+
+    if len(histogram) >= 4:
+        out._fTitle = histogram[3]
+    else:
+        out._fTitle = b""
+
+    out._classname, content = _histtype(content)
+
+    valuesarray = numpy.pad(content.T, (1, 1), mode='constant').flatten()
+
+    out.extend(valuesarray)
+    out._fSumw2 = valuesarray**2
+
+    return out
