@@ -136,21 +136,21 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
                          fill(t, "TLorentzVectorArray.t", prefix, suffix, schemasuffix, storage, compression, **kwargs)]}
 
     @staticmethod
-    def _wrapmethods(node):
+    def _wrapmethods(node, awkwardlib):
         if isinstance(node, awkward.array.chunked.ChunkedArray):
-            node.__class__ = type("ChunkedArrayMethods", (self.awkward.ChunkedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            node.__class__ = type("ChunkedArrayMethods", (awkwardlib.ChunkedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
             for chunk in node.chunks:
-                ArrayMethods._wrapmethods(chunk)
+                ArrayMethods._wrapmethods(chunk, awkwardlib)
         elif isinstance(node, awkward.array.jagged.JaggedArray):
-            node.__class__ = type("JaggedArrayMethods", (self.awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
-            ArrayMethods._wrapmethods(node.content)
+            node.__class__ = type("JaggedArrayMethods", (awkwardlib.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            ArrayMethods._wrapmethods(node.content, awkwardlib)
         elif isinstance(node, awkward.array.objects.ObjectArray):
-            node.__class__ = type("ObjectArrayMethods", (self.awkward.ObjectArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            node.__class__ = type("ObjectArrayMethods", (awkwardlib.ObjectArray, uproot_methods.classes.TVector3.ArrayMethods), {})
         
     @property
     def p3(self):
         out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
-        ArrayMethods._wrapmethods(out)
+        ArrayMethods._wrapmethods(out, self.awkward)
         out["fX"] = self.x
         out["fY"] = self.y
         out["fZ"] = self.z
