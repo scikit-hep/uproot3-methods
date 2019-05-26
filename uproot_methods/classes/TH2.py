@@ -224,7 +224,10 @@ def _histtype(content):
         return b"TH2D", content.astype(">f8")
 
 def from_numpy(histogram):
-    content, xedges, yedges = histogram[:3]
+    if isinstance(histogram[1], list) and len(histogram[1]) == 2:
+        content, (xedges, yedges) = histogram[:2]
+    else:
+        content, xedges, yedges = histogram[:3]
 
     class TH2(Methods, list):
         pass

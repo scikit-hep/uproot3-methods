@@ -35,7 +35,7 @@ def towriteable(obj):
             return ("uproot_methods.classes.TH2", "from_numpy", "uproot.write.objects.TH", "TH")
 
         # made with numpy.histogramdd (2-dimensional)
-        elif isinstance(obj, tuple) and len(obj) == 2 and any(x[:2] == ("numpy", "ndarray") for x in types(obj[0].__class__, obj[0])) and isinstance(obj[1], list) and len(obj[1]) == 2 and any(x[:2] == ("numpy", "ndarray") for x in types(obj[1][0].__class__, obj[1][0])) and any(x[:2] == ("numpy", "ndarray") for x in types(obj[1][1].__class__, obj[1][1])) and len(obj[0].shape) == 2 and len(obj[1][0].shape) == 1 and len(obj[1][1].shape) == 1 and obj[0].shape[0] == obj[1][0].shape - 1 and obj[0].shape[0] == obj[1][1].shape - 1:
+        elif isinstance(obj, tuple) and len(obj) == 2 and any(x[:2] == ("numpy", "ndarray") for x in types(obj[0].__class__, obj[0])) and isinstance(obj[1], list) and len(obj[1]) == 2 and any(x[:2] == ("numpy", "ndarray") for x in types(obj[1][0].__class__, obj[1][0])) and any(x[:2] == ("numpy", "ndarray") for x in types(obj[1][1].__class__, obj[1][1])) and len(obj[0].shape) == 2 and len(obj[1][0].shape) == 1 and len(obj[1][1].shape) == 1 and obj[0].shape[0] == obj[1][0].shape[0] - 1 and obj[0].shape[0] == obj[1][1].shape[0] - 1:
             return ("uproot_methods.classes.TH2", "from_numpy", "uproot.write.objects.TH", "TH")
 
         elif any(x[:3] == ("pandas.core.frame", "DataFrame", "IntervalIndex") and "count" in x[3] for x in types(obj.__class__, obj)):
