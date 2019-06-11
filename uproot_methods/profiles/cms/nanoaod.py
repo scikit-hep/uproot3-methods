@@ -24,6 +24,9 @@ class AttributeTable(awkward.array.table.Table):
         super(AttributeTable, self).__delitem__(where)
 
 def transform(array):
+    array._valid()
+    array.check_whole_valid = False
+
     out = AttributeTable.named("Event")
     HLT = AttributeTable.named("HLT")
 
