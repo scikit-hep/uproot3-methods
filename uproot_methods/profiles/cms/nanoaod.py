@@ -146,11 +146,12 @@ def transform(array):
                 collection[rename] = data
 
     eventtype = events.type
+    eventtype.takes = array.type.takes
     eventtype.to["electrons"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
 
     for i, chunk in enumerate(events["electrons"].chunks):
         events["electrons"].chunks[i] = VirtualArray(crossref, (chunk, events["jets"].chunks[i], array["Electron_jetIdx"].chunks[i], "jet", eventtype.to["electrons"].to["jet"]),
-                                                     type=eventtype.to["jets"], cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+                                                     type=awkward.type.ArrayType(eventtype.takes, eventtype.to["electrons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
 # Electron_jetIdx
 # Electron_photonIdx
@@ -177,14 +178,13 @@ def transform(array):
 
 def crossref(fromarray, toarray, localindex, name, totype):
     out = fromarray.array
-
-    print(type(awkward.type.ArrayType(out.offsets[-1], totype)))
-    print(awkward.type.ArrayType(out.offsets[-1], totype))
-
     totype = awkward.type.ArrayType(out.offsets[-1], totype)
-
-    out[name] = out.VirtualArray(indexedmask, (toarray, localindex), type=totype, cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
+    out.content[name] = out.VirtualArray(indexedmask, (toarray, localindex), type=totype, cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
     return out
 
 def indexedmask(toarray, localindex):
-    raise Exception
+    jagged = toarray.array
+    localindex = localindex.array
+    globalindex = localindex + jagged.starts
+    globalindex.content[localindex.content < 0] = -1
+    return toarray.IndexedMaskedArray(globalindex.content, jagged.content)
