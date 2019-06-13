@@ -50,6 +50,8 @@ def transform(array):
     array._valid()
     array.check_whole_valid = False
 
+    ChunkedArray = array.ChunkedArray
+    VirtualArray = array.VirtualArray
     Table = array.Table
 
     stuff = [("run",                               "run",                                None),
@@ -143,6 +145,28 @@ def transform(array):
             if len(data.columns) > 0:
                 collection[rename] = data
 
+    eventtype = events.type
+    eventtype.to["electrons"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
+
+    for i, chunk in enumerate(events["electrons"].chunks):
+        events["electrons"].chunks[i] = VirtualArray(crossref, (chunk, events["jets"].chunks[i], array["Electron_jetIdx"].chunks[i], "jet", eventtype.to["electrons"].to["jet"]),
+                                                     type=eventtype.to["jets"], cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+
+# Electron_jetIdx
+# Electron_photonIdx
+# FatJet_subJetIdx1
+# FatJet_subJetIdx2
+# Jet_electronIdx1
+# Jet_electronIdx2
+# Jet_muonIdx1
+# Jet_muonIdx2
+# Muon_jetIdx
+# Photon_electronIdx
+# Photon_jetIdx
+# Tau_jetIdx
+
+
+
     if len(others) > 0:
         etc = events["etc"] = Table.named("OtherFields")
         for n in others:
@@ -150,3 +174,17 @@ def transform(array):
     events["raw"] = array
 
     return events
+
+def crossref(fromarray, toarray, localindex, name, totype):
+    out = fromarray.array
+
+    print(type(awkward.type.ArrayType(out.offsets[-1], totype)))
+    print(awkward.type.ArrayType(out.offsets[-1], totype))
+
+    totype = awkward.type.ArrayType(out.offsets[-1], totype)
+
+    out[name] = out.VirtualArray(indexedmask, (toarray, localindex), type=totype, cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
+    return out
+
+def indexedmask(toarray, localindex):
+    raise Exception
