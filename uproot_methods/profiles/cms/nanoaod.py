@@ -50,27 +50,29 @@ def transform(array):
     array._valid()
     array.check_whole_valid = False
 
-    muons = []
-    flag = array.Table.named("Flags")
-    HLT = array.Table.named("HLT")
+    stuff = [("Muon_", "muons", []),
+             ("Flag_", "flag", array.Table.named("flags")),
+             ("HLT_", "HLT", array.Table.named("HLT"))]
 
     for n in array.columns:
-        if n.startswith("Muon_"):
-            muons.append((n[len("Muon_"):], array[n]))
-        elif n.startswith("Flag_"):
-            flag[n[len("Flag_"):]] = array[n]
-        elif n.startswith("HLT_"):
-            HLT[n[len("HLT_"):]] = array[n]
-        else:
-            print(n)
-
+        for prefix, collection, data in stuff:
+            if n.startswith(prefix):
+                if isinstance(data, list):
+                    data.append((n[len(prefix):], array[n]))
+                else:
+                    data[n[len(prefix):]] = array[n]
+                
     out = array.Table.named("Event")
     out["raw"] = array
-    if len(muons) > 0 and "nMuon" in array.columns:
-        out["muons"] = lazyjagged(array["nMuon"], "Muon", muons)
-    if len(flag.columns) > 0:
-        out["flag"] = flag
-    if len(HLT.columns) > 0:
-        out["HLT"] = HLT
+
+    for prefix, collection, data in stuff:
+        if isinstance(data, list):
+            rowname = prefix[:-1]
+            countname = "n" + rowname
+            if len(data) > 0 and countname in array.columns:
+                out[collection] = lazyjagged(array[countname], rowname, data)
+        else:
+            if len(data.columns) > 0:
+                out[collection] = data
 
     return out
