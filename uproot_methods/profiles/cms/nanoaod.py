@@ -5,80 +5,24 @@
 import awkward.type
 import awkward.array.chunked
 
-# def unwrap(array, flatten):
-#     if isinstance(array, awkward.array.chunked.ChunkedArray):
-#         return array.copy(chunks=[unwrap(chunk, flatten) for chunk in array.chunks])
-#     elif isinstance(array, awkward.array.virtual.VirtualArray):
-#         return unwrap(array.array, flatten)
-#     elif isinstance(array, awkward.array.jagged.JaggedArray):
-#         if flatten:
-#             return array.content
-#         else:
-#             return array
-#     else:
-#         raise NotImplementedError(type(array))
-
-# class GenerateJaggedTable(object):
-#     def __init__(self, JaggedArray, Table, rowname, counts):
-#         self.JaggedArray = JaggedArray
-#         self.Table = Table
-#         self.rowname = rowname
-#         self.counts = counts
-#         self.fields = OrderedDict()
-
-#     def __call__(self):
-#         # table = self.Table.named(self.rowname)
-#         # for n, x in self.fields.items():
-#         #     table[n] = awkward.array.virtual.VirtualArray(unwrap, x)
-
-#         VirtualArray = self.counts.VirtualArray
-#         ChunkedArray = self.counts.ChunkedArray
-#         return ChunkedArray([VirtualArray(makejagged, chunk) for chunk in self.counts.chunks], self.counts.counts)
-
-#     # def __call__(self, rowgroup, column):
-#     #     return fromarrow(self.parquetfile.read_row_group(rowgroup, columns=[column]))[column]
-
-#     # def __getstate__(self):
-#     #     return {"file": self.file, "metadata": self.metadata, "common_metadata": self.common_metadata}
-
-#     # def __setstate__(self, state):
-#     #     self.file = state["file"]
-#     #     self.metadata = state["metadata"]
-#     #     self.common_metadata = state["common_metadata"]
-#     #     self._init()
-
-#     # def tojson(self):
-#     #     json.dumps([self.file, self.metadata, self.common_metadata])
-#     #     return {"file": self.file, "metadata": self.metadata, "common_metadata": self.common_metadata}
-
-#     # @classmethod
-#     # def fromjson(cls, state):
-#     #     return cls(state["file"], metadata=state["metadata"], common_metadata=state["common_metadata"])
-
 def getcontent(virtual):
     return virtual.array.content
 
-class GenerateJaggedTable(object):
-    def __init__(self, rowname, counts, fields):
-        self.rowname = rowname
-        self.counts = counts
-        self.fields = fields
+def jaggedtable(rowname, counts, fields):
+    Table = counts.Table
+    JaggedArray = counts.JaggedArray
+    VirtualArray = counts.VirtualArray
+    ChunkedArray = counts.ChunkedArray
 
-    def __call__(self):
-        Table = self.counts.Table
-        JaggedArray = self.counts.JaggedArray
-        VirtualArray = self.counts.VirtualArray
-        ChunkedArray = self.counts.ChunkedArray
-
-        countsarray = self.counts.array
-        if isinstance(countsarray, awkward.array.chunked.ChunkedArray):
-            return lazyjagged(countsarray, self.rowname, [(n, x.array) for n, x in self.fields])
-        else:
-            offsets = JaggedArray.counts2offsets(countsarray)
-            table = Table.named(self.rowname)
-            for n, x in self.fields:
-                table[n] = VirtualArray(getcontent, x, type=awkward.type.ArrayType(offsets[-1], x.type.to.to), cache=self.counts.cache, persistvirtual=self.counts.persistvirtual)
-            return JaggedArray.fromoffsets(offsets, table)
+    countsarray = counts.array
+    if isinstance(countsarray, awkward.array.chunked.ChunkedArray):
+        return lazyjagged(countsarray, rowname, [(n, x.array) for n, x in fields])
+    else:
+        offsets = JaggedArray.counts2offsets(countsarray)
+        table = Table.named(rowname)
+        for n, x in fields:
+            table[n] = VirtualArray(getcontent, x, type=awkward.type.ArrayType(offsets[-1], x.type.to.to), cache=counts.cache, persistvirtual=counts.persistvirtual)
+        return JaggedArray.fromoffsets(offsets, table)
 
 def lazyjagged(countsarray, rowname, fields):
     VirtualArray = countsarray.VirtualArray
@@ -91,8 +35,7 @@ def lazyjagged(countsarray, rowname, fields):
             assert field.counts[i] == countsarray.counts[i]
             fieldschunks.append((fieldname, field.chunks[i]))
             tabletype[fieldname] = field.type.to.to
-        generator = GenerateJaggedTable(rowname, countschunk, fieldschunks)
-        chunks.append(VirtualArray(generator, type=awkward.type.ArrayType(len(countschunk), float("inf"), tabletype), cache=countschunk.cache, persistvirtual=countschunk.persistvirtual))
+        chunks.append(VirtualArray(jaggedtable, (rowname, countschunk, fieldschunks), type=awkward.type.ArrayType(len(countschunk), float("inf"), tabletype), cache=countschunk.cache, persistvirtual=countschunk.persistvirtual))
     return ChunkedArray(chunks, countsarray.counts)
 
 def transform(array):
