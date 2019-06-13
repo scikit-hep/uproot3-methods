@@ -37,14 +37,14 @@ def lazyjagged(countsarray, rowname, fields):
         fieldschunks = []
         tabletype = awkward.type.TableType()
         for fieldname, field in fields:
-            assert field.counts[i] == countsarray.counts[i]
+            assert field.chunksizes[i] == countsarray.chunksizes[i]
             fieldschunks.append((fieldname, field.chunks[i]))
             tabletype[fieldname] = field.type.to.to
         columns = tabletype.columns
         if "pt" in columns and "eta" in columns and "phi" in columns and "mass" in columns and "p4" not in columns:
             tabletype["p4"] = uproot_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim
         chunks.append(VirtualArray(jaggedtable, (rowname, countschunk, fieldschunks), type=awkward.type.ArrayType(len(countschunk), float("inf"), tabletype), cache=countschunk.cache, persistvirtual=countschunk.persistvirtual))
-    return ChunkedArray(chunks, countsarray.counts)
+    return ChunkedArray(chunks, countsarray.chunksizes)
 
 def transform(array):
     array._valid()
