@@ -132,7 +132,8 @@ def transform(array):
             collection = events
 
         if data is None:
-            collection[rename] = array[prefix]
+            if prefix in array.columns:
+                collection[rename] = array[prefix]
         elif isinstance(data, list):
             rowname = prefix[:-1]
             countname = "n" + rowname
