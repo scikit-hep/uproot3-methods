@@ -3,6 +3,7 @@
 # BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
 
 import awkward.type
+import awkward.array.chunked
 
 # def unwrap(array, flatten):
 #     if isinstance(array, awkward.array.chunked.ChunkedArray):
@@ -67,12 +68,17 @@ class GenerateJaggedTable(object):
         Table = self.counts.Table
         JaggedArray = self.counts.JaggedArray
         VirtualArray = self.counts.VirtualArray
+        ChunkedArray = self.counts.ChunkedArray
 
-        offsets = JaggedArray.counts2offsets(self.counts.array)
-        table = Table.named(self.rowname)
-        for n, x in self.fields:
-            table[n] = VirtualArray(getcontent, x, type=awkward.type.ArrayType(offsets[-1], x.type.to.to), cache=self.counts.cache, persistvirtual=self.counts.persistvirtual)
-        return JaggedArray.fromoffsets(offsets, table)
+        countsarray = self.counts.array
+        if isinstance(countsarray, awkward.array.chunked.ChunkedArray):
+            return lazyjagged(countsarray, self.rowname, [(n, x.array) for n, x in self.fields])
+        else:
+            offsets = JaggedArray.counts2offsets(countsarray)
+            table = Table.named(self.rowname)
+            for n, x in self.fields:
+                table[n] = VirtualArray(getcontent, x, type=awkward.type.ArrayType(offsets[-1], x.type.to.to), cache=self.counts.cache, persistvirtual=self.counts.persistvirtual)
+            return JaggedArray.fromoffsets(offsets, table)
 
 def lazyjagged(countsarray, rowname, fields):
     VirtualArray = countsarray.VirtualArray
