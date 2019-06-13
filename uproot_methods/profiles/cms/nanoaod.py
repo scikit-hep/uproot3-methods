@@ -50,29 +50,102 @@ def transform(array):
     array._valid()
     array.check_whole_valid = False
 
-    stuff = [("Muon_", "muons", []),
-             ("Flag_", "flag", array.Table.named("flags")),
-             ("HLT_", "HLT", array.Table.named("HLT"))]
+    Table = array.Table
 
+    stuff = [("run",                               "run",                                None),
+             ("luminosityBlock",                   "lumi",                               None),
+             ("event",                             "event",                              None),
+             ("Electron_",                         "electrons",                          []),
+             ("Muon_",                             "muons",                              []),
+             ("Tau_",                              "taus",                               []),
+             ("Photon_",                           "photons",                            []),
+             ("Jet_",                              "jets",                               []),
+             ("FatJet_",                           "fatjets",                            []),
+             ("SubJet_",                           "subjets",                            []),
+             ("IsoTrack_",                         "isotracks",                          []),
+             ("SoftActivityJet_",                  "softjets",                           []),
+             ("SoftActivityJetHT",                 "softactivity.HT",                    None),
+             ("SoftActivityJetHT2",                "softactivity.HT2",                   None),
+             ("SoftActivityJetHT5",                "softactivity.HT5",                   None),
+             ("SoftActivityJetHT10",               "softactivity.HT10",                  None),
+             ("SoftActivityJetNjets2",             "softactivity.njets2",                None),
+             ("SoftActivityJetNjets5",             "softactivity.njets5",                None),
+             ("SoftActivityJetNjets10",            "softactivity.njets10",               None),
+             ("fixedGridRhoFastjetAll",            "fixedGridRhoFastjet.all",            None),
+             ("fixedGridRhoFastjetCentralCalo",    "fixedGridRhoFastjet.centralcalo",    None),
+             ("fixedGridRhoFastjetCentralNeutral", "fixedGridRhoFastjet.centralneutral", None),
+             ("MET_",                              "MET",                                Table.named("MET")),
+             ("RawMET_",                           "rawMET",                             Table.named("RawMET")),
+             ("CaloMET_",                          "caloMET",                            Table.named("CaloMET")),
+             ("PuppiMET_",                         "puppiMET",                           Table.named("PuppiMET")),
+             ("TkMET_",                            "tkMET",                              Table.named("TkMET")),
+             ("PV_",                               "PV",                                 Table.named("PV")),
+             ("SV_",                               "SVs",                                []),
+             ("OtherPV_",                          "otherPVs",                           []),
+             ("Pileup_",                           "pileup",                             Table.named("Pileup")),
+             ("Flag_",                             "flags",                              Table.named("Flags")),
+             ("TrigObj_",                          "trigobjs",                           []),
+             ("HLT_",                              "HLT",                                Table.named("HLT")),
+             ("HLTriggerFirstPath",                "HLT.firstpath",                      None),
+             ("HLTriggerFinalPath",                "HLT.finalpath",                      None),
+             ("Generator_",                        "gen",                                Table.named("Generator")),
+             ("GenDressedLepton_",                 "gen.dressedleptons",                 []),
+             ("GenPart_",                          "gen.partons",                        []),
+             ("GenJet_",                           "gen.jets",                           []),
+             ("GenJetAK8_",                        "gen.jetsAK8",                        []),
+             ("SubGenJetAK8_",                     "gen.subjetsAK8",                     []),
+             ("GenVisTau_",                        "gen.vistaus",                        []),
+             ("GenMET_",                           "gen.MET",                            Table.named("GenMET")),
+             ("LHE_",                              "gen.LHE",                            Table.named("LHE")),
+             ("LHEPart_",                          "gen.LHEpartons",                     []),
+             ("genWeight",                         "gen.weight",                         None),
+             ("LHEPdfWeight",                      "gen.LHEpdfweight",                   None),
+             ("LHEScaleWeight",                    "gen.LHEscaleweight",                 None),
+             ("LHEWeight_originalXWGTUP",          "gen.LHEweight_originalXWGTUP",       None),
+             ]
+
+    others = []
     for n in array.columns:
-        for prefix, collection, data in stuff:
+        for prefix, rename, data in stuff:
             if n.startswith(prefix):
-                if isinstance(data, list):
+                if data is None:
+                    pass
+                elif isinstance(data, list):
                     data.append((n[len(prefix):], array[n]))
                 else:
                     data[n[len(prefix):]] = array[n]
-                
-    out = array.Table.named("Event")
-    out["raw"] = array
+                break
+            elif n == "n" + prefix.rstrip("_"):
+                break
+        else:
+            others.append(n)
 
-    for prefix, collection, data in stuff:
-        if isinstance(data, list):
+    events = Table.named("Event")
+    events["raw"] = array
+
+    for prefix, rename, data in stuff:
+        if "." in rename:
+            outer, inner = rename.split(".")
+            if outer not in events.columns:
+                events[outer] = Table.named(outer.capitalize())
+            collection, rename = events[outer], inner
+        else:
+            collection = events
+
+        if data is None:
+            collection[rename] = array[prefix]
+        elif isinstance(data, list):
             rowname = prefix[:-1]
             countname = "n" + rowname
             if len(data) > 0 and countname in array.columns:
-                out[collection] = lazyjagged(array[countname], rowname, data)
+                collection[rename] = lazyjagged(array[countname], rowname, data)
         else:
             if len(data.columns) > 0:
-                out[collection] = data
+                collection[rename] = data
 
-    return out
+    if len(others) > 0:
+        etc = events["etc"] = Table.named("OtherFields")
+        for n in others:
+            etc[n] = array[n]
+
+    return events
