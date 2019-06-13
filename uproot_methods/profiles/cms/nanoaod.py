@@ -71,7 +71,7 @@ def transform(array):
              ("SoftActivityJetNjets2",             "softactivity.njets2",                None),
              ("SoftActivityJetNjets5",             "softactivity.njets5",                None),
              ("SoftActivityJetNjets10",            "softactivity.njets10",               None),
-             ("fixedGridRhoFastjetAll",            "fixedGridRhoFastjet.all",            None),
+             ("fixedGridRhoFastjetAll",            "fixedGridRhoFastjet.everything",     None),
              ("fixedGridRhoFastjetCentralCalo",    "fixedGridRhoFastjet.centralcalo",    None),
              ("fixedGridRhoFastjetCentralNeutral", "fixedGridRhoFastjet.centralneutral", None),
              ("MET_",                              "MET",                                Table.named("MET")),
@@ -98,7 +98,7 @@ def transform(array):
              ("GenMET_",                           "gen.MET",                            Table.named("GenMET")),
              ("LHE_",                              "gen.LHE",                            Table.named("LHE")),
              ("LHEPart_",                          "gen.LHEpartons",                     []),
-             ("genWeight",                         "gen.weight",                         None),
+             ("genWeight",                         "gen.genweight",                      None),
              ("LHEPdfWeight",                      "gen.LHEpdfweight",                   None),
              ("LHEScaleWeight",                    "gen.LHEscaleweight",                 None),
              ("LHEWeight_originalXWGTUP",          "gen.LHEweight_originalXWGTUP",       None),
@@ -121,7 +121,6 @@ def transform(array):
             others.append(n)
 
     events = Table.named("Event")
-    events["raw"] = array
 
     for prefix, rename, data in stuff:
         if "." in rename:
@@ -147,5 +146,6 @@ def transform(array):
         etc = events["etc"] = Table.named("OtherFields")
         for n in others:
             etc[n] = array[n]
+    events["raw"] = array
 
     return events
