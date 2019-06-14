@@ -46,16 +46,33 @@ def lazyjagged(countsarray, rowname, fields):
         chunks.append(VirtualArray(jaggedtable, (rowname, countschunk, fieldschunks), type=awkward.type.ArrayType(len(countschunk), float("inf"), tabletype), cache=countschunk.cache, persistvirtual=countschunk.persistvirtual))
     return ChunkedArray(chunks, countsarray.chunksizes)
 
-def crossref(fromarray, links):
+def crossref(fromarray, links, subj):
     out = fromarray.array
-    for collection, subname, i, localindex, name, totype in links:
-        toarray = collection[subname].chunks[i]
-        out.content[name] = out.VirtualArray(indexedmask, (toarray, localindex), type=awkward.type.ArrayType(out.offsets[-1], totype), cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
-    return out
+    if isinstance(out, awkward.array.chunked.ChunkedArray):
+        chunks = []
+        for j, chunk in enumerate(out.chunks):
+            newtype = awkward.type.ArrayType(out.chunksizes[j], float("inf"), awkward.type.TableType())
+            for n in chunk.type.to.to.columns:
+                newtype.to.to[n] = chunk.type.to.to[n]
+            for collection, subname, i, localindex, name, totype in links:
+                newtype.to.to[name] = totype
+            chunks.append(out.VirtualArray(crossref, (chunk, links, j), type=newtype, cache=fromarray.cache, persistvirtual=fromarray.persistvirtual))
 
-def indexedmask(toarray, localindex):
+        return out.ChunkedArray(chunks, out.chunksizes)
+
+    else:
+        for collection, subname, i, localindex, name, totype in links:
+            toarray = collection[subname].chunks[i]
+            out.content[name] = out.VirtualArray(indexedmask, (toarray, localindex, subj), type=awkward.type.ArrayType(out.offsets[-1], totype), cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
+        return out
+
+def indexedmask(toarray, localindex, subj):
     jagged = toarray.array
     localindex = localindex.array
+    if subj is not None:
+        jagged = jagged.chunks[subj].array
+        localindex = localindex.chunks[subj].array
+
     globalindex = localindex + jagged.starts
     globalindex.content[localindex.content < 0] = -1
     return toarray.IndexedMaskedArray(globalindex.content, jagged.content)
@@ -75,7 +92,7 @@ def set_crossrefs(events, array):
         events["electrons"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "photons", i, array["Electron_photonIdx"].chunks[i], "photon", eventtype.to["electrons"].to["photon"]),
             (events, "jets", i, array["Electron_jetIdx"].chunks[i], "jet", eventtype.to["electrons"].to["jet"]),
-            ]), type=awkward.type.ArrayType(events["electrons"].chunksizes[i], eventtype.to["electrons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward.type.ArrayType(events["electrons"].chunksizes[i], eventtype.to["electrons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
     eventtype.to["muons"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["muons"].to["jet"].check = False
@@ -83,7 +100,7 @@ def set_crossrefs(events, array):
         assert events["muons"].chunksizes[i] == events["jets"].chunksizes[i]
         events["muons"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "jets", i, array["Muon_jetIdx"].chunks[i], "jet", eventtype.to["muons"].to["jet"]),
-            ]), type=awkward.type.ArrayType(events["muons"].chunksizes[i], eventtype.to["muons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward.type.ArrayType(events["muons"].chunksizes[i], eventtype.to["muons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
     eventtype.to["taus"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["taus"].to["jet"].check = False
@@ -91,7 +108,7 @@ def set_crossrefs(events, array):
         assert events["taus"].chunksizes[i] == events["jets"].chunksizes[i]
         events["taus"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "jets", i, array["Tau_jetIdx"].chunks[i], "jet", eventtype.to["taus"].to["jet"]),
-            ]), type=awkward.type.ArrayType(events["jets"].chunksizes[i], eventtype.to["taus"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward.type.ArrayType(events["jets"].chunksizes[i], eventtype.to["taus"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
     eventtype.to["taus"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["taus"].to["jet"].check = False
@@ -99,7 +116,7 @@ def set_crossrefs(events, array):
         assert events["taus"].chunksizes[i] == events["jets"].chunksizes[i]
         events["taus"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "jets", i, array["Tau_jetIdx"].chunks[i], "jet", eventtype.to["taus"].to["jet"]),
-            ]), type=awkward.type.ArrayType(events["taus"].chunksizes[i], eventtype.to["taus"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward.type.ArrayType(events["taus"].chunksizes[i], eventtype.to["taus"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
     eventtype.to["photons"].to["electron"] = awkward.type.OptionType(eventtype.to["electrons"].to)
     eventtype.to["photons"].to["electron"].check = False
@@ -110,7 +127,7 @@ def set_crossrefs(events, array):
         events["photons"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "electrons", i, array["Photon_electronIdx"].chunks[i], "electron", eventtype.to["photons"].to["electron"]),
             (events, "jets", i, array["Photon_jetIdx"].chunks[i], "jet", eventtype.to["photons"].to["jet"]),
-            ]), type=awkward.type.ArrayType(events["photons"].chunksizes[i], eventtype.to["photons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward.type.ArrayType(events["photons"].chunksizes[i], eventtype.to["photons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
 # Photon_electronIdx
 # Photon_jetIdx
@@ -186,7 +203,8 @@ def transform(array):
                 if data is None:
                     pass
                 elif isinstance(data, list):
-                    data.append((n[len(prefix):], array[n]))
+                    if n[len(prefix):] == "pt":
+                        data.append((n[len(prefix):], array[n]))
                 else:
                     data[n[len(prefix):]] = array[n]
                 break
