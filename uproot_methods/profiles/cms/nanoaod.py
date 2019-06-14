@@ -4,6 +4,7 @@
 
 import awkward.type
 import awkward.array.chunked
+import awkward.array.objects
 
 import uproot_methods.classes.TLorentzVector
 
@@ -13,8 +14,9 @@ def getcontent(virtual):
 def jaggedtable(rowname, counts, fields):
     Table = counts.Table
     JaggedArray = counts.JaggedArray
-    VirtualArray = counts.VirtualArray
     ChunkedArray = counts.ChunkedArray
+    VirtualArray = counts.VirtualArray
+    VirtualTLorentzVectorArray = awkward.array.objects.Methods.mixin(uproot_methods.classes.TLorentzVector.PtEtaPhiMassArrayMethods, VirtualArray)
 
     countsarray = counts.array
     if isinstance(countsarray, awkward.array.chunked.ChunkedArray):
@@ -26,12 +28,13 @@ def jaggedtable(rowname, counts, fields):
             table[n] = VirtualArray(getcontent, x, type=awkward.type.ArrayType(offsets[-1], x.type.to.to), cache=counts.cache, persistvirtual=counts.persistvirtual)
         columns = table.columns
         if "pt" in columns and "eta" in columns and "phi" in columns and "mass" in columns and "p4" not in columns:
-            table["p4"] = VirtualArray(uproot_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim, (table["pt"], table["eta"], table["phi"], table["mass"]), type=awkward.type.ArrayType(offsets[-1], uproot_methods.classes.TLorentzVector.PtEtaPhiMassLorentzVectorArray), cache=counts.cache, persistvirtual=counts.persistvirtual)
+            table["p4"] = VirtualTLorentzVectorArray(uproot_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim, (table["pt"], table["eta"], table["phi"], table["mass"]), type=awkward.type.ArrayType(offsets[-1], uproot_methods.classes.TLorentzVector.PtEtaPhiMassLorentzVectorArray), cache=counts.cache, persistvirtual=counts.persistvirtual)
         return JaggedArray.fromoffsets(offsets, table)
 
 def lazyjagged(countsarray, rowname, fields):
-    VirtualArray = countsarray.VirtualArray
     ChunkedArray = countsarray.ChunkedArray
+    VirtualArray = countsarray.VirtualArray
+
     chunks = []
     for i, countschunk in enumerate(countsarray.chunks):
         fieldschunks = []
@@ -48,6 +51,9 @@ def lazyjagged(countsarray, rowname, fields):
 
 def crossref(fromarray, links, subj):
     out = fromarray.array
+    ChunkedArray = out.ChunkedArray
+    VirtualArray = out.VirtualArray
+
     if isinstance(out, awkward.array.chunked.ChunkedArray):
         chunks = []
         for j, chunk in enumerate(out.chunks):
@@ -56,14 +62,14 @@ def crossref(fromarray, links, subj):
                 newtype.to.to[n] = chunk.type.to.to[n]
             for collection, subname, i, localindex, name, totype in links:
                 newtype.to.to[name] = totype
-            chunks.append(out.VirtualArray(crossref, (chunk, links, j), type=newtype, cache=fromarray.cache, persistvirtual=fromarray.persistvirtual))
+            chunks.append(VirtualArray(crossref, (chunk, links, j), type=newtype, cache=fromarray.cache, persistvirtual=fromarray.persistvirtual))
 
-        return out.ChunkedArray(chunks, out.chunksizes)
+        return ChunkedArray(chunks, out.chunksizes)
 
     else:
         for collection, subname, i, localindex, name, totype in links:
             toarray = collection[subname].chunks[i]
-            out.content[name] = out.VirtualArray(indexedmask, (toarray, localindex, subj), type=awkward.type.ArrayType(out.offsets[-1], totype), cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
+            out.content[name] = VirtualArray(indexedmask, (toarray, localindex, subj), type=awkward.type.ArrayType(out.offsets[-1], totype), cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
         return out
 
 def indexedmask(toarray, localindex, subj):
@@ -82,7 +88,6 @@ def transform(array):
     array.check_whole_valid = False
 
     Table = array.Table
-    ChunkedArray = array.ChunkedArray
     VirtualArray = array.VirtualArray
 
     stuff = [("run",                               "run",                                None),
