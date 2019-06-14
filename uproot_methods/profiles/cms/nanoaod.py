@@ -124,47 +124,62 @@ def transform(array):
 
     events = Table.named("Event")
 
-    for prefix, rename, data in stuff:
+    def makecollection(rename):
         if "." in rename:
             outer, inner = rename.split(".")
             if outer not in events.columns:
                 events[outer] = Table.named(outer.capitalize())
-            collection, rename = events[outer], inner
+            return events[outer], inner
         else:
-            collection = events
+            return events, rename
 
+    for prefix, rename, data in stuff:
         if data is None:
             if prefix in array.columns:
+                collection, rename = makecollection(rename)
                 collection[rename] = array[prefix]
         elif isinstance(data, list):
             rowname = prefix[:-1]
             countname = "n" + rowname
             if len(data) > 0 and countname in array.columns:
+                collection, rename = makecollection(rename)
                 collection[rename] = lazyjagged(array[countname], rowname, data)
         else:
             if len(data.columns) > 0:
+                collection, rename = makecollection(rename)
                 collection[rename] = data
 
     eventtype = events.type
     eventtype.takes = array.type.takes
+
     eventtype.to["electrons"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
-
+    eventtype.to["electrons"].to["photon"] = awkward.type.OptionType(eventtype.to["photons"].to)
     for i, chunk in enumerate(events["electrons"].chunks):
-        events["electrons"].chunks[i] = VirtualArray(crossref, (chunk, events["jets"].chunks[i], array["Electron_jetIdx"].chunks[i], "jet", eventtype.to["electrons"].to["jet"]),
-                                                     type=awkward.type.ArrayType(eventtype.takes, eventtype.to["electrons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+        assert events["electrons"].chunksizes[i] == events["jets"].chunksizes[i] == events["photons"].chunksizes[i]
+        events["electrons"].chunks[i] = VirtualArray(crossref, (chunk, [
+            (events["jets"].chunks[i], array["Electron_jetIdx"].chunks[i], "jet", eventtype.to["electrons"].to["jet"]),
+            (events["photons"].chunks[i], array["Electron_photonIdx"].chunks[i], "photon", eventtype.to["electrons"].to["photon"]),
+            ]), type=awkward.type.ArrayType(eventtype.takes, eventtype.to["electrons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
-# Electron_jetIdx
-# Electron_photonIdx
-# FatJet_subJetIdx1
-# FatJet_subJetIdx2
+    eventtype.to["muons"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
+    for i, chunk in enumerate(events["muons"].chunks):
+        assert events["muons"].chunksizes[i] == events["jets"].chunksizes[i]
+        events["muons"].chunks[i] = VirtualArray(crossref, (chunk, [
+            (events["jets"].chunks[i], array["Muon_jetIdx"].chunks[i], "jet", eventtype.to["muons"].to["jet"]),
+            ]), type=awkward.type.ArrayType(eventtype.takes, eventtype.to["muons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+
+
+
+# Muon_jetIdx
+# Tau_jetIdx
+# Photon_electronIdx
+# Photon_jetIdx
 # Jet_electronIdx1
 # Jet_electronIdx2
 # Jet_muonIdx1
 # Jet_muonIdx2
-# Muon_jetIdx
-# Photon_electronIdx
-# Photon_jetIdx
-# Tau_jetIdx
+# FatJet_subJetIdx1
+# FatJet_subJetIdx2
 
 
 
@@ -176,10 +191,10 @@ def transform(array):
 
     return events
 
-def crossref(fromarray, toarray, localindex, name, totype):
+def crossref(fromarray, links):
     out = fromarray.array
-    totype = awkward.type.ArrayType(out.offsets[-1], totype)
-    out.content[name] = out.VirtualArray(indexedmask, (toarray, localindex), type=totype, cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
+    for toarray, localindex, name, totype in links:
+        out.content[name] = out.VirtualArray(indexedmask, (toarray, localindex), type=awkward.type.ArrayType(out.offsets[-1], totype), cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
     return out
 
 def indexedmask(toarray, localindex):
