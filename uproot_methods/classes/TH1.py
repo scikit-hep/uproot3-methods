@@ -194,58 +194,49 @@ class Methods(uproot_methods.base.ROOTMethods):
             stream.write("\n")
 
     def pandas(self, underflow=True, overflow=True, variance=True):
-        import pandas
-        freq = numpy.array(self.allvalues, dtype=getattr(self, "_dtype", numpy.dtype(numpy.float64)).newbyteorder("="))
 
         if not underflow and not overflow:
-            freq = freq[1:-1]
+            s = slice(1,-1)
         elif not underflow:
-            freq = freq[1:]
+            s = slice(1, None)
         elif not overflow:
-            freq = freq[:-1]
-
-        edges = numpy.empty(self._fXaxis._fNbins + 3, dtype=numpy.float64)
-        edges[0] = -numpy.inf
-        edges[-1] = numpy.inf
-
-        if getattr(self._fXaxis, "_fXbins", None):
-            edges[1:-1] = numpy.array(self._fXaxis._fXbins)
+            s = slice(None,-1)
         else:
-            edges[1:-1] = numpy.linspace(self._fXaxis._fXmin, self._fXaxis._fXmax, self._fXaxis._fNbins + 1)
+            s = slice(None)
 
-        if not underflow and not overflow:
-            edges = edges[1:-1]
-        elif not underflow:
-            edges = edges[1:]
-        elif not overflow:
-            edges = edges[:-1]
+        def get_name(obj):
+            if getattr(obj, "_fTitle", b"") == b"":
+                return None
+            else:
+                return obj._fTitle.decode("utf-8", "ignore")
 
-        if getattr(self, "_fTitle", b"") == b"":
-            name = None
+        allbins = self.allbins
+        if type(allbins) != tuple:
+            allbins = (allbins,)
+
+        dim = len(allbins)
+
+        if dim == 1:
+            index_name_objects = (self,)
+        elif dim == 2:
+            index_name_objects = (self._fXaxis, self._fYaxis)
+        elif dim == 3:
+            index_name_objects = (self._fXaxis, self._fYaxis, self._fZaxis)
         else:
-            name = self._fTitle.decode("utf-8", "ignore")
+            raise NotImplementedError
 
-        lefts, rights = edges[:-1], edges[1:]
-
-        nonzero = (freq != 0.0)
-        index = pandas.IntervalIndex.from_arrays(lefts[nonzero], rights[nonzero], closed="left", name=name)
-
-        data = {"count": freq[nonzero]}
+        data = {"count" : self.allvalues[(s,)*dim].flatten()}
         columns = ["count"]
 
         if variance:
-            if getattr(self, "_fSumw2", None):
-                sumw2 = self._fSumw2
-                if not underflow and not overflow:
-                    sumw2 = sumw2[1:-1]
-                elif not underflow:
-                    sumw2 = sumw2[1:]
-                elif not overflow:
-                    sumw2 = sumw2[:-1]
-                data["variance"] = numpy.array(sumw2)[nonzero]
-            else:
-                data["variance"] = data["count"]
-            columns.append("variance")
+            data["variance"] = self.allvariances[(s,)*dim].flatten()
+            columns += ["variance"]
+
+        import pandas
+
+        intervals = ((pandas.Interval(a,b, closed="left") for a, b in bins[s]) for bins in allbins)
+        names = (get_name(obj) for obj in index_name_objects)
+        index = pandas.MultiIndex.from_product(intervals, names=names)
 
         return pandas.DataFrame(index=index, data=data, columns=columns)
 
