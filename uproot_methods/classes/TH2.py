@@ -197,61 +197,6 @@ class Methods(uproot_methods.base.ROOTMethods):
         else:
             return [str(x) for x in self._fYaxis._fLabels]
 
-    def pandas(self, underflow=True, overflow=True, variance=True):
-        def flow(x):
-            if not underflow and not overflow:
-                return x[1:-1]
-            elif not underflow:
-                return x[1:]
-            elif not overflow:
-                return x[:-1]
-            return x
-
-        def flow2d(x):
-            if not underflow and not overflow:
-                return x[1:-1, 1:-1]
-            elif not underflow:
-                return x[1:, 1:]
-            elif not overflow:
-                return x[:-1, -1]
-            return x
-
-        import pandas
-
-        x_bins, y_bins = self.allbins
-
-        x_bins = flow(x_bins)
-        y_bins = flow(y_bins)
-
-        n_x = len(x_bins)
-        n_y = len(y_bins)
-
-        x_bins_expanded = numpy.repeat(x_bins, n_y, axis=0)
-
-        y_bins_expanded = numpy.tile(y_bins, (n_x, 1))
-
-        data = dict(
-            x_min=x_bins_expanded[:, 0],
-            x_max=x_bins_expanded[:, 1],
-            y_min=y_bins_expanded[:, 0],
-            y_max=y_bins_expanded[:, 1],
-            value=flow2d(self.allvalues).flatten(),
-        )
-
-        columns = ["x_min", "x_max", "y_min", "y_max", "value"]
-
-        if variance:
-            data["variance"] = flow2d(self.allvariances).flatten()
-            columns += ["variance"]
-
-        bin_x_idx = numpy.repeat(numpy.arange(n_x), n_y)
-        bin_y_idx = numpy.tile(numpy.arange(n_y), n_x)
-
-        index = pandas.MultiIndex.from_tuples(list(zip(bin_x_idx, bin_y_idx)), names=["x_bin", "y_bin"])
-
-        return pandas.DataFrame(index=index, data=data, columns=columns)
-
-
 def _histtype(content):
     if issubclass(content.dtype.type, (numpy.bool_, numpy.bool)):
         return b"TH2C", content.astype(">i1")
