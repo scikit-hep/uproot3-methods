@@ -60,6 +60,6 @@ class Test(unittest.TestCase):
         _ys = numpy.array([0, 2, 1])
         arr = TVector2Array.from_cartesian(_xs, _ys).rotate(numpy.pi/4).rotate(-numpy.pi/4)
 
-        _jxs = JaggedArray.fromiter([[2,], [], [0, 1]])
-        _jys = JaggedArray.fromiter([[0,], [], [2, 1]])
+        _jxs = awkward.JaggedArray.fromiter([[2,], [], [0, 1]])
+        _jys = awkward.JaggedArray.fromiter([[0,], [], [2, 1]])
         jarr = TVector2Array.from_cartesian(_jxs, _jys).rotate(numpy.pi/3).rotate(-numpy.pi/3)
