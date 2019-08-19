@@ -224,10 +224,16 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
         b2 = p3.mag2
         gamma = (1 - b2)**(-0.5)
-        gamma2 = self.awkward.numpy.zeros(b2.shape, dtype=self.awkward.numpy.float64)
-        mask = (b2 != 0)
-        gamma2[mask] = (gamma[mask] - 1) / b2[mask]
-        del mask
+
+        # b2 == 0  -->  gamma2 = nan
+        with self.awkward.numpy.errstate(divide="ignore"):
+            gamma2 = (gamma - 1) / b2
+
+        # but we want b2 == 0  -->  gamma2 = 0.5
+        if isinstance(gamma2, self.awkward.numpy.ndarray):
+            gamma2[self.awkward.numpy.isnan(gamma2)] = 0.5
+        else:
+            gamma2.fillna(0.5)
 
         bp = self.p3.dot(p3)
 
