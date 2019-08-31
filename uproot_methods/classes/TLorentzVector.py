@@ -125,15 +125,15 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
 
-    def __awkward_persist__(self, ident, fill, prefix, suffix, schemasuffix, storage, compression, **kwargs):
+    def __awkward_serialize__(self, serializer):
         self._valid()
         x, y, z, t = self.x, self.y, self.z, self.t
-        return {"id": ident,
-                "call": ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_cartesian"],
-                "args": [fill(x, "TLorentzVectorArray.x", prefix, suffix, schemasuffix, storage, compression, **kwargs),
-                         fill(y, "TLorentzVectorArray.y", prefix, suffix, schemasuffix, storage, compression, **kwargs),
-                         fill(z, "TLorentzVectorArray.z", prefix, suffix, schemasuffix, storage, compression, **kwargs),
-                         fill(t, "TLorentzVectorArray.t", prefix, suffix, schemasuffix, storage, compression, **kwargs)]}
+        return serializer.encode_call(
+            ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_cartesian"],
+            serializer(x, "TLorentzVectorArray.x"),
+            serializer(y, "TLorentzVectorArray.y"),
+            serializer(z, "TLorentzVectorArray.z"),
+            serializer(t, "TLorentzVectorArray.t"))
 
     @staticmethod
     def _wrapmethods(node, awkwardlib):
@@ -322,6 +322,16 @@ JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
 class PtEtaPhiMassArrayMethods(ArrayMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: PtEtaPhiMassLorentzVector(row["fPt"], row["fEta"], row["fPhi"], row["fMass"]))
+
+    def __awkward_serialize__(self, serializer):
+        self._valid()
+        pt, eta, phi, mass = self.pt, self.eta, self.phi, self.mass
+        return serializer.encode_call(
+            ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_ptetaphim"],
+            serializer(pt, "TLorentzVectorArray.pt"),
+            serializer(eta, "TLorentzVectorArray.eta"),
+            serializer(phi, "TLorentzVectorArray.phi"),
+            serializer(mass, "TLorentzVectorArray.mass"))
     
     @property
     def x(self):

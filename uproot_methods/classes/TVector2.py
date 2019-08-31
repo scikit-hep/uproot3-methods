@@ -28,13 +28,13 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: TVector2(row["fX"], row["fY"]))
 
-    def __awkward_persist__(self, ident, fill, prefix, suffix, schemasuffix, storage, compression, **kwargs):
+    def __awkward_serialize__(self, serializer):
         self._valid()
         x, y = self.x, self.y
-        return {"id": ident,
-                "call": ["uproot_methods.classes.TVector2", "TVector2Array", "from_cartesian"],
-                "args": [fill(x, "TVector2Array.x", prefix, suffix, schemasuffix, storage, compression, **kwargs),
-                         fill(y, "TVector2Array.y", prefix, suffix, schemasuffix, storage, compression, **kwargs)]}
+        return serializer.encode_call(
+            ["uproot_methods.classes.TVector2", "TVector2Array", "from_cartesian"],
+            serializer(x, "TVector3Array.x"),
+            serializer(y, "TVector3Array.y"))
 
     @property
     def x(self):
