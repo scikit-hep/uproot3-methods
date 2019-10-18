@@ -793,6 +793,10 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
         return out
 
     @classmethod
+    def from_ptetaphie(cls, pt, eta, phi, energy):
+        return cls.from_ptetaphi(pt, eta, phi, energy)
+
+    @classmethod
     @awkward.util.wrapjaggedmethod(PtEtaPhiMassJaggedArrayMethods)
     def from_ptetaphim(cls, pt, eta, phi, mass):
         return PtEtaPhiMassLorentzVectorArray(pt,eta,phi,mass)
@@ -910,6 +914,10 @@ class TLorentzVector(Methods):
                    pt * math.sin(phi),
                    pt * math.sinh(eta),
                    energy)
+
+    @classmethod
+    def from_ptetaphie(cls, pt, eta, phi, energy):
+        return cls.from_ptetaphi(pt, eta, phi, energy)
     
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):
