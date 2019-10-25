@@ -405,6 +405,38 @@ class PtEtaPhiMassArrayMethods(ArrayMethods):
     def p2(self):
         return self.p**2
 
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if "out" in kwargs:
+            raise NotImplementedError("in-place operations not supported")
+
+        if method != "__call__":
+            return NotImplemented
+
+        inputs = list(inputs)
+        for i in range(len(inputs)):
+            if isinstance(inputs[i], self.awkward.numpy.ndarray) and inputs[i].dtype == self.awkward.numpy.dtype(object) and len(inputs[i]) > 0:
+                idarray = self.awkward.numpy.frombuffer(inputs[i], dtype=self.awkward.numpy.uintp)
+                if (idarray == idarray[0]).all():
+                    inputs[i] = inputs[i][0]
+
+        if ufunc is self.awkward.numpy.multiply or ufunc is self.awkward.numpy.divide:
+            if sum(isinstance(x, PtEtaPhiMassArrayMethods) for x in inputs) > 1:
+                raise ValueError("cannot multiply or divide two PtEtaPhiMassArrayMethods")
+            this_input = None
+            for i in range(len(inputs)):
+                if isinstance(inputs[i], PtEtaPhiMassArrayMethods) and not isinstance(inputs[i], self.awkward.JaggedArray) and this_input is None:
+                    this_input = inputs[i]
+                    inputs[i] = self.awkward.Table(fPt=inputs[i]['fPt'], fMass=inputs[i]['fMass'])
+
+            out = super(PtEtaPhiMassArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
+            if this_input is not None:
+                out['fEta'] = this_input['fEta']
+                out['fPhi'] = this_input['fPhi']
+            return out
+
+        else:
+            return super(PtEtaPhiMassArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
+
 PtEtaPhiMassJaggedArrayMethods = PtEtaPhiMassArrayMethods.mixin(PtEtaPhiMassArrayMethods, awkward.JaggedArray)
 
 class Methods(Common, uproot_methods.base.ROOTMethods):
@@ -434,7 +466,7 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
         return TLorentzVector(self.x,self.y,self.z,self.t)
     
     def __repr__(self):
-        return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
+        return "TLorentzVector(x={0:.5g}, y={1:.5g}, z={2:.5g}, t={3:.5g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
 
     def __str__(self):
         return repr(self)
@@ -706,7 +738,7 @@ class PtEtaPhiMassMethods(Methods):
         return self.awkward.numpy.sqrt(x*x + y*y + z*z + mass*mass*self.awkward.numpy.sign(mass))
     
     def __repr__(self):
-        return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fPt, self._fEta, self._fPhi, self._fMass)
+        return "PtEtaPhiMassLorentzVector(pt={0:.5g}, eta={1:.5g}, phi={2:.5g}, mass={3:.5g})".format(self._fPt, self._fEta, self._fPhi, self._fMass)
 
 class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, pt, eta, phi, mass):
