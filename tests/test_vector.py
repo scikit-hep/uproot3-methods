@@ -134,6 +134,23 @@ class Test(unittest.TestCase):
         assert (a + TLorentzVector(1000, 2000, 0, 0) == TLorentzVectorArray(numpy.full(10, 1000), numpy.arange(2000, 2010), numpy.zeros(10), numpy.zeros(10))).tolist() == [True, True, True, True, True, True, True, True, True, True]
         assert (a**2).tolist() == [0.0, -1.0, -4.0, -9.0, -16.0, -25.0, -36.0, -49.0, -64.0, -81.0]
 
+    def test_ptetaphim_array(self):
+        a = TLorentzVectorArray.from_ptetaphim(
+            numpy.full(5, 20.),
+            numpy.linspace(-5, 5, 5),
+            numpy.linspace(-numpy.pi, numpy.pi, 6)[:-1],
+            numpy.linspace(0, 20., 5),
+        )
+        assert (a * 5).tolist() == [
+            PtEtaPhiMassLorentzVector(pt=100, eta=-5,   phi=-numpy.pi + 0*numpy.pi/5, mass=0),
+            PtEtaPhiMassLorentzVector(pt=100, eta=-2.5, phi=-numpy.pi + 2*numpy.pi/5, mass=25),
+            PtEtaPhiMassLorentzVector(pt=100, eta=0,    phi=-numpy.pi + 4*numpy.pi/5, mass=50),
+            PtEtaPhiMassLorentzVector(pt=100, eta=2.5,  phi=-numpy.pi + 6*numpy.pi/5, mass=75),
+            PtEtaPhiMassLorentzVector(pt=100, eta=5,    phi=-numpy.pi + 8*numpy.pi/5, mass=100)
+        ]
+        assert a.sum().p < 1e-10
+        assert a.sum().mass == numpy.hypot(20 * numpy.cosh(a.eta), a.mass).sum()
+
     def test_lorentzvector_jagged(self):
         TLorentzVectorJagged = type("TLorentzVectorJagged", (awkward.JaggedArray, uproot_methods.classes.TLorentzVector.ArrayMethods), {})
         a = TLorentzVectorJagged.fromoffsets([0, 3, 3, 5, 10], TLorentzVectorArray(numpy.zeros(10), numpy.arange(10), numpy.zeros(10), numpy.zeros(10)))
