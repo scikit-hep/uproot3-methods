@@ -10,7 +10,7 @@ import uproot_methods.base
 class Methods(uproot_methods.base.ROOTMethods):
     @property
     def numbins(self):
-        return self.xnumbins * self.ynumbins
+        return self.xnumbins * self.ynumbins * self.znumbins
 
     @property
     def xnumbins(self):
