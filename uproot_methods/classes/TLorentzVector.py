@@ -272,7 +272,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         return self.awkward.numpy.absolute(self.mag2) < tolerance
 
     def sum(self):
-        if isinstance(self, self.awkward.JaggedArray):
+        if isinstance(self, awkward.AwkwardArray) and self._util_hasjagged(self):
             return TLorentzVectorArray.from_cartesian(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
         else:
             return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
