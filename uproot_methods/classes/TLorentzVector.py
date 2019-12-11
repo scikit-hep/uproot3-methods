@@ -95,13 +95,13 @@ class Common(object):
         return self.p3._rotate_euler(phi, theta, psi), self.t
 
     def rotatex(self, angle):
-        return self.rotate_axis(TVector3(1.0, 0.0, 0.0), angle)
+        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(1.0, 0.0, 0.0), angle)
 
     def rotatey(self, angle):
-        return self.rotate_axis(TVector3(0.0, 1.0, 0.0), angle)
+        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(0.0, 1.0, 0.0), angle)
 
     def rotatez(self, angle):
-        return self.rotate_axis(TVector3(0.0, 0.0, 1.0), angle)
+        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(0.0, 0.0, 1.0), angle)
 
     def isspacelike(self, tolerance=1e-10):
         return self.mag2 < -tolerance
@@ -252,19 +252,21 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
     def rotate_axis(self, axis, angle):
         p3, t = self._rotate_axis(axis, angle)
+        x, y, z = p3
         out = self.empty_like()
-        out["fX"] = p3.x
-        out["fY"] = p3.y
-        out["fZ"] = p3.z
+        out["fX"] = x
+        out["fY"] = y
+        out["fZ"] = z
         out["fE"] = t
         return out
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         p3, t = self._rotate_euler(phi, theta, psi)
+        x, y, z = p3
         out = self.empty_like()
-        out["fX"] = p3.x
-        out["fY"] = p3.y
-        out["fZ"] = p3.z
+        out["fX"] = x
+        out["fY"] = y
+        out["fZ"] = z
         out["fE"] = t
         return out
 
@@ -564,11 +566,13 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
 
     def rotate_axis(self, axis, angle):
         p3, t = self._rotate_axis(axis, angle)
-        return self.__class__(p3.x, p3.y, p3.z, t)
+        x, y, z = p3
+        return self.__class__(x, y, z, t)
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         p3, t = self._rotate_euler(phi, theta, psi)
-        return self.__class__(p3.x, p3.y, p3.z, t)
+        x, y, z = p3
+        return self.__class__(x, y, z, t)
 
     def islightlike(self, tolerance=1e-10):
         return abs(self.mag2) < tolerance
