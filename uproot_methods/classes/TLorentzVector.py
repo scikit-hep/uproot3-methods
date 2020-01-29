@@ -434,6 +434,7 @@ class PtEtaPhiMassArrayMethods(ArrayMethods):
             if this_input is not None:
                 out['fEta'] = this_input['fEta']
                 out['fPhi'] = this_input['fPhi']
+                out.__class__ = this_input.__class__
             return out
 
         else:
