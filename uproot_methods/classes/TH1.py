@@ -12,7 +12,7 @@ import uproot_methods.base
 
 class Methods(uproot_methods.base.ROOTMethods):
     def __repr__(self):
-        if self._fName is None:
+        if self.name is None:
             return "<{0} at 0x{1:012x}>".format(self._classname, id(self))
         else:
             return "<{0} {1} 0x{2:012x}>".format(self._classname, repr(self._fName), id(self))

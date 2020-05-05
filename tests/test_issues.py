@@ -52,3 +52,14 @@ class Test(unittest.TestCase):
         phi = phi[mask]
 
         electrons = uproot_methods.TLorentzVectorArray.from_ptetaphim(pt, eta, phi, 0.000511)
+
+    def test_issue61(self):
+        assert TVector2(2, 0).rotate(numpy.pi/6).rotate(-numpy.pi/6) == TVector2(2, 0)
+
+        _xs = numpy.array([2, 0, 1])
+        _ys = numpy.array([0, 2, 1])
+        arr = TVector2Array.from_cartesian(_xs, _ys).rotate(numpy.pi/4).rotate(-numpy.pi/4)
+
+        _jxs = awkward.JaggedArray.fromiter([[2,], [], [0, 1]])
+        _jys = awkward.JaggedArray.fromiter([[0,], [], [2, 1]])
+        jarr = TVector2Array.from_cartesian(_jxs, _jys).rotate(numpy.pi/3).rotate(-numpy.pi/3)

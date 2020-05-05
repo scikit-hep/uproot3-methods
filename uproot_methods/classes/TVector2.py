@@ -17,20 +17,24 @@ class Common(object):
         out = out + self.y*other.y
         return out
 
-    # TODO:
-    # def _rotate(self, angle)
+    def _rotate(self, angle):
+        c = self.awkward.numpy.cos(angle)
+        s = self.awkward.numpy.sin(angle)
+        x = self.x*c - self.y*s
+        y = self.x*s + self.y*c
+        return x, y
 
 class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: TVector2(row["fX"], row["fY"]))
 
-    def __awkward_persist__(self, ident, fill, prefix, suffix, schemasuffix, storage, compression, **kwargs):
+    def __awkward_serialize__(self, serializer):
         self._valid()
         x, y = self.x, self.y
-        return {"id": ident,
-                "call": ["uproot_methods.classes.TVector2", "TVector2Array", "from_cartesian"],
-                "args": [fill(x, "TVector2Array.x", prefix, suffix, schemasuffix, storage, compression, **kwargs),
-                         fill(y, "TVector2Array.y", prefix, suffix, schemasuffix, storage, compression, **kwargs)]}
+        return serializer.encode_call(
+            ["uproot_methods.classes.TVector2", "TVector2Array", "from_cartesian"],
+            serializer(x, "TVector3Array.x"),
+            serializer(y, "TVector3Array.y"))
 
     @property
     def x(self):
@@ -39,6 +43,13 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
     @property
     def y(self):
         return self["fY"]
+
+    def rotate(self, angle):
+        x, y = self._rotate(angle)
+        out = self.empty_like()
+        out["fX"] = x
+        out["fY"] = y
+        return out
 
     def sum(self):
         if isinstance(self, self.awkward.JaggedArray):
@@ -109,7 +120,7 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
             return TVector2(operator(scalar, self.x), operator(scalar, self.y))
         else:
             return TVector2(operator(self.x, scalar), operator(self.y, scalar))
-        
+
     def _vector(self, operator, vector, reverse=False):
         if not isinstance(vector, Methods):
             raise TypeError("cannot {0} a TVector2 with a {1}".format(operator.__name__, type(vector).__name__))
@@ -120,6 +131,10 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
 
     def _unary(self, operator):
         return TVector2(operator(self.x), operator(self.y))
+
+    def rotate(self, angle):
+        x, y = self._rotate(angle)
+        return TVector2(x, y)
 
 class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
 

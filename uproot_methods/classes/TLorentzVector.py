@@ -95,13 +95,13 @@ class Common(object):
         return self.p3._rotate_euler(phi, theta, psi), self.t
 
     def rotatex(self, angle):
-        return self.rotate_axis(TVector3(1.0, 0.0, 0.0), angle)
+        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(1.0, 0.0, 0.0), angle)
 
     def rotatey(self, angle):
-        return self.rotate_axis(TVector3(0.0, 1.0, 0.0), angle)
+        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(0.0, 1.0, 0.0), angle)
 
     def rotatez(self, angle):
-        return self.rotate_axis(TVector3(0.0, 0.0, 1.0), angle)
+        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(0.0, 0.0, 1.0), angle)
 
     def isspacelike(self, tolerance=1e-10):
         return self.mag2 < -tolerance
@@ -125,15 +125,15 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
 
-    def __awkward_persist__(self, ident, fill, prefix, suffix, schemasuffix, storage, compression, **kwargs):
+    def __awkward_serialize__(self, serializer):
         self._valid()
         x, y, z, t = self.x, self.y, self.z, self.t
-        return {"id": ident,
-                "call": ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_cartesian"],
-                "args": [fill(x, "TLorentzVectorArray.x", prefix, suffix, schemasuffix, storage, compression, **kwargs),
-                         fill(y, "TLorentzVectorArray.y", prefix, suffix, schemasuffix, storage, compression, **kwargs),
-                         fill(z, "TLorentzVectorArray.z", prefix, suffix, schemasuffix, storage, compression, **kwargs),
-                         fill(t, "TLorentzVectorArray.t", prefix, suffix, schemasuffix, storage, compression, **kwargs)]}
+        return serializer.encode_call(
+            ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_cartesian"],
+            serializer(x, "TLorentzVectorArray.x"),
+            serializer(y, "TLorentzVectorArray.y"),
+            serializer(z, "TLorentzVectorArray.z"),
+            serializer(t, "TLorentzVectorArray.t"))
 
     @staticmethod
     def _wrapmethods(node, awkwardlib):
@@ -258,19 +258,21 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
     def rotate_axis(self, axis, angle):
         p3, t = self._rotate_axis(axis, angle)
+        x, y, z = p3
         out = self.empty_like()
-        out["fX"] = p3.x
-        out["fY"] = p3.y
-        out["fZ"] = p3.z
+        out["fX"] = x
+        out["fY"] = y
+        out["fZ"] = z
         out["fE"] = t
         return out
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         p3, t = self._rotate_euler(phi, theta, psi)
+        x, y, z = p3
         out = self.empty_like()
-        out["fX"] = p3.x
-        out["fY"] = p3.y
-        out["fZ"] = p3.z
+        out["fX"] = x
+        out["fY"] = y
+        out["fZ"] = z
         out["fE"] = t
         return out
 
@@ -278,7 +280,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         return self.awkward.numpy.absolute(self.mag2) < tolerance
 
     def sum(self):
-        if isinstance(self, self.awkward.JaggedArray):
+        if isinstance(self, awkward.AwkwardArray) and self._util_hasjagged(self):
             return TLorentzVectorArray.from_cartesian(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
         else:
             return TLorentzVector(self.x.sum(), self.y.sum(), self.z.sum(), self.t.sum())
@@ -328,6 +330,16 @@ JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward.JaggedArray)
 class PtEtaPhiMassArrayMethods(ArrayMethods):
     def _initObjectArray(self, table):
         self.awkward.ObjectArray.__init__(self, table, lambda row: PtEtaPhiMassLorentzVector(row["fPt"], row["fEta"], row["fPhi"], row["fMass"]))
+
+    def __awkward_serialize__(self, serializer):
+        self._valid()
+        pt, eta, phi, mass = self.pt, self.eta, self.phi, self.mass
+        return serializer.encode_call(
+            ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_ptetaphim"],
+            serializer(pt, "TLorentzVectorArray.pt"),
+            serializer(eta, "TLorentzVectorArray.eta"),
+            serializer(phi, "TLorentzVectorArray.phi"),
+            serializer(mass, "TLorentzVectorArray.mass"))
     
     @property
     def x(self):
@@ -401,6 +413,39 @@ class PtEtaPhiMassArrayMethods(ArrayMethods):
     def p2(self):
         return self.p**2
 
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if "out" in kwargs:
+            raise NotImplementedError("in-place operations not supported")
+
+        if method != "__call__":
+            return NotImplemented
+
+        inputs = list(inputs)
+        for i in range(len(inputs)):
+            if isinstance(inputs[i], self.awkward.numpy.ndarray) and inputs[i].dtype == self.awkward.numpy.dtype(object) and len(inputs[i]) > 0:
+                idarray = self.awkward.numpy.frombuffer(inputs[i], dtype=self.awkward.numpy.uintp)
+                if (idarray == idarray[0]).all():
+                    inputs[i] = inputs[i][0]
+
+        if ufunc is self.awkward.numpy.multiply or ufunc is self.awkward.numpy.divide:
+            if sum(isinstance(x, PtEtaPhiMassArrayMethods) for x in inputs) > 1:
+                raise ValueError("cannot multiply or divide two PtEtaPhiMassArrayMethods")
+            this_input = None
+            for i in range(len(inputs)):
+                if isinstance(inputs[i], PtEtaPhiMassArrayMethods) and not isinstance(inputs[i], self.awkward.JaggedArray) and this_input is None:
+                    this_input = inputs[i]
+                    inputs[i] = self.awkward.Table(fPt=inputs[i]['fPt'], fMass=inputs[i]['fMass'])
+
+            out = super(PtEtaPhiMassArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
+            if this_input is not None:
+                out['fEta'] = this_input['fEta']
+                out['fPhi'] = this_input['fPhi']
+                out.__class__ = this_input.__class__
+            return out
+
+        else:
+            return super(PtEtaPhiMassArrayMethods, self).__array_ufunc__(ufunc, method, *inputs, **kwargs)
+
 PtEtaPhiMassJaggedArrayMethods = PtEtaPhiMassArrayMethods.mixin(PtEtaPhiMassArrayMethods, awkward.JaggedArray)
 
 class Methods(Common, uproot_methods.base.ROOTMethods):
@@ -430,7 +475,7 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
         return TLorentzVector(self.x,self.y,self.z,self.t)
     
     def __repr__(self):
-        return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
+        return "TLorentzVector(x={0:.5g}, y={1:.5g}, z={2:.5g}, t={3:.5g})".format(self._fP._fX, self._fP._fY, self._fP._fZ, self._fE)
 
     def __str__(self):
         return repr(self)
@@ -528,11 +573,13 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
 
     def rotate_axis(self, axis, angle):
         p3, t = self._rotate_axis(axis, angle)
-        return self.__class__(p3.x, p3.y, p3.z, t)
+        x, y, z = p3
+        return self.__class__(x, y, z, t)
 
     def rotate_euler(self, phi=0, theta=0, psi=0):
         p3, t = self._rotate_euler(phi, theta, psi)
-        return self.__class__(p3.x, p3.y, p3.z, t)
+        x, y, z = p3
+        return self.__class__(x, y, z, t)
 
     def islightlike(self, tolerance=1e-10):
         return abs(self.mag2) < tolerance
@@ -702,7 +749,7 @@ class PtEtaPhiMassMethods(Methods):
         return self.awkward.numpy.sqrt(x*x + y*y + z*z + mass*mass*self.awkward.numpy.sign(mass))
     
     def __repr__(self):
-        return "TLorentzVector({0:.5g}, {1:.5g}, {2:.5g}, {3:.5g})".format(self._fPt, self._fEta, self._fPhi, self._fMass)
+        return "PtEtaPhiMassLorentzVector(pt={0:.5g}, eta={1:.5g}, phi={2:.5g}, mass={3:.5g})".format(self._fPt, self._fEta, self._fPhi, self._fMass)
 
 class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.base.ROOTMethods.awkward.ObjectArray):
     def __init__(self, pt, eta, phi, mass):
@@ -805,6 +852,10 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward.
         out._memo_eta = eta
         out._memo_phi = phi
         return out
+
+    @classmethod
+    def from_ptetaphie(cls, pt, eta, phi, energy):
+        return cls.from_ptetaphi(pt, eta, phi, energy)
 
     @classmethod
     @awkward.util.wrapjaggedmethod(PtEtaPhiMassJaggedArrayMethods)
@@ -924,6 +975,10 @@ class TLorentzVector(Methods):
                    pt * math.sin(phi),
                    pt * math.sinh(eta),
                    energy)
+
+    @classmethod
+    def from_ptetaphie(cls, pt, eta, phi, energy):
+        return cls.from_ptetaphi(pt, eta, phi, energy)
     
     @classmethod
     def from_ptetaphim(cls, pt, eta, phi, mass):

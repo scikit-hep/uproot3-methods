@@ -74,6 +74,10 @@ class Test(unittest.TestCase):
         assert abs(a) == 7.043436661176133
         assert -a == TVector3(-4.4, -5.5, 0)
         assert +a == TVector3(4.4, 5.5, 0)
+        arot = a.rotatez(numpy.pi)
+        self.assertAlmostEqual(arot.x,-a.x)
+        self.assertAlmostEqual(arot.y,-a.y)
+        self.assertAlmostEqual(arot.z,a.z)
 
         a += TVector3(100, 200, 0)
         assert a == TVector3(104.4, 205.5, 0)
@@ -90,6 +94,11 @@ class Test(unittest.TestCase):
         assert (a + TVector3(1000, 2000, 0) == TVector3Array(numpy.full(10, 1000), numpy.arange(2000, 2010), numpy.zeros(10))).tolist() == [True, True, True, True, True, True, True, True, True, True]
         assert (a**2).tolist() == [0.0, 1.0, 4.0, 9.0, 16.0, 25.0, 36.0, 49.0, 64.0, 81.0]
         assert (a**3).tolist() == [0.0, 1.0, 8.0, 27.0, 64.0, 125.0, 216.0, 343.0, 512.0, 729.0]
+        arot = a.rotatez(numpy.pi)
+        for aroti, ai in zip(arot.tolist(),a.tolist()):
+            self.assertAlmostEqual(aroti.x,-ai.x)
+            self.assertAlmostEqual(aroti.y,-ai.y)
+            self.assertAlmostEqual(aroti.z,ai.z)
 
     def test_vector3_jagged(self):
         TVector3Jagged = type("TVector3Jagged", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
@@ -102,6 +111,11 @@ class Test(unittest.TestCase):
         assert a.y.tolist() == [[0, 1, 2], [], [3, 4], [5, 6, 7, 8, 9]]
         assert (a + TVector3(1000, 2000, 0)).tolist() == [[TVector3(1000, 2000, 0), TVector3(1000, 2001, 0), TVector3(1000, 2002, 0)], [], [TVector3(1000, 2003, 0), TVector3(1000, 2004, 0)], [TVector3(1000, 2005, 0), TVector3(1000, 2006, 0), TVector3(1000, 2007, 0), TVector3(1000, 2008, 0), TVector3(1000, 2009, 0)]]
         assert (a + TVector3Array(numpy.full(4, 1000), numpy.arange(1000, 5000, 1000), numpy.zeros(4))).tolist() == [[TVector3(1000, 1000, 0), TVector3(1000, 1001, 0), TVector3(1000, 1002, 0)], [], [TVector3(1000, 3003, 0), TVector3(1000, 3004, 0)], [TVector3(1000, 4005, 0), TVector3(1000, 4006, 0), TVector3(1000, 4007, 0), TVector3(1000, 4008, 0), TVector3(1000, 4009, 0)]]
+        arot = a.rotatez(numpy.pi)
+        for aroti, ai in zip(arot.flatten().tolist(),a.flatten().tolist()):
+            self.assertAlmostEqual(aroti.x,-ai.x)
+            self.assertAlmostEqual(aroti.y,-ai.y)
+            self.assertAlmostEqual(aroti.z,ai.z)
 
     def test_lorentzvector(self):
         a = TLorentzVector(4.4, 5.5, 0, 0)
@@ -118,6 +132,11 @@ class Test(unittest.TestCase):
         assert abs(a + TLorentzVector(0, 0, 0, 10)) == 7.098591409568521
         assert -a == TLorentzVector(-4.4, -5.5, 0, 0)
         assert +a == TLorentzVector(4.4, 5.5, 0, 0)
+        arot = a.rotatez(numpy.pi)
+        self.assertAlmostEqual(arot.x,-a.x)
+        self.assertAlmostEqual(arot.y,-a.y)
+        self.assertAlmostEqual(arot.z,a.z)
+        assert arot.t == a.t
 
         a += TLorentzVector(100, 200, 0, 0)
         assert a == TLorentzVector(104.4, 205.5, 0, 0)
@@ -133,6 +152,29 @@ class Test(unittest.TestCase):
         assert (a + TLorentzVector(1000, 2000, 0, 0))[5] == TLorentzVector(1000, 2005, 0, 0)
         assert (a + TLorentzVector(1000, 2000, 0, 0) == TLorentzVectorArray(numpy.full(10, 1000), numpy.arange(2000, 2010), numpy.zeros(10), numpy.zeros(10))).tolist() == [True, True, True, True, True, True, True, True, True, True]
         assert (a**2).tolist() == [0.0, -1.0, -4.0, -9.0, -16.0, -25.0, -36.0, -49.0, -64.0, -81.0]
+        arot = a.rotatez(numpy.pi)
+        for aroti, ai in zip(arot.tolist(),a.tolist()):
+            self.assertAlmostEqual(aroti.x,-ai.x)
+            self.assertAlmostEqual(aroti.y,-ai.y)
+            self.assertAlmostEqual(aroti.z,ai.z)
+            assert aroti.t==ai.t
+
+    def test_ptetaphim_array(self):
+        a = TLorentzVectorArray.from_ptetaphim(
+            numpy.full(5, 20.),
+            numpy.linspace(-5, 5, 5),
+            numpy.linspace(-numpy.pi, numpy.pi, 6)[:-1],
+            numpy.linspace(0, 20., 5),
+        )
+        assert (a * 5).tolist() == [
+            PtEtaPhiMassLorentzVector(pt=100, eta=-5,   phi=-numpy.pi + 0*numpy.pi/5, mass=0),
+            PtEtaPhiMassLorentzVector(pt=100, eta=-2.5, phi=-numpy.pi + 2*numpy.pi/5, mass=25),
+            PtEtaPhiMassLorentzVector(pt=100, eta=0,    phi=-numpy.pi + 4*numpy.pi/5, mass=50),
+            PtEtaPhiMassLorentzVector(pt=100, eta=2.5,  phi=-numpy.pi + 6*numpy.pi/5, mass=75),
+            PtEtaPhiMassLorentzVector(pt=100, eta=5,    phi=-numpy.pi + 8*numpy.pi/5, mass=100)
+        ]
+        assert a.sum().p < 1e-10
+        assert a.sum().mass == numpy.hypot(20 * numpy.cosh(a.eta), a.mass).sum()
 
     def test_lorentzvector_jagged(self):
         TLorentzVectorJagged = type("TLorentzVectorJagged", (awkward.JaggedArray, uproot_methods.classes.TLorentzVector.ArrayMethods), {})
@@ -145,3 +187,9 @@ class Test(unittest.TestCase):
         assert a.y.tolist() == [[0, 1, 2], [], [3, 4], [5, 6, 7, 8, 9]]
         assert (a + TLorentzVector(1000, 2000, 0, 0)).tolist() == [[TLorentzVector(1000, 2000, 0, 0), TLorentzVector(1000, 2001, 0, 0), TLorentzVector(1000, 2002, 0, 0)], [], [TLorentzVector(1000, 2003, 0, 0), TLorentzVector(1000, 2004, 0, 0)], [TLorentzVector(1000, 2005, 0, 0), TLorentzVector(1000, 2006, 0, 0), TLorentzVector(1000, 2007, 0, 0), TLorentzVector(1000, 2008, 0, 0), TLorentzVector(1000, 2009, 0, 0)]]
         assert (a + TLorentzVectorArray(numpy.full(4, 1000), numpy.arange(1000, 5000, 1000), numpy.zeros(4), numpy.zeros(4))).tolist() == [[TLorentzVector(1000, 1000, 0, 0), TLorentzVector(1000, 1001, 0, 0), TLorentzVector(1000, 1002, 0, 0)], [], [TLorentzVector(1000, 3003, 0, 0), TLorentzVector(1000, 3004, 0, 0)], [TLorentzVector(1000, 4005, 0, 0), TLorentzVector(1000, 4006, 0, 0), TLorentzVector(1000, 4007, 0, 0), TLorentzVector(1000, 4008, 0, 0), TLorentzVector(1000, 4009, 0, 0)]]
+        arot = a.rotatez(numpy.pi)
+        for aroti, ai in zip(arot.flatten().tolist(),a.flatten().tolist()):
+            self.assertAlmostEqual(aroti.x,-ai.x)
+            self.assertAlmostEqual(aroti.y,-ai.y)
+            self.assertAlmostEqual(aroti.z,ai.z)
+            assert aroti.t==ai.t
