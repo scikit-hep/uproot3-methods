@@ -26,7 +26,7 @@ Reference documentation
 """
 
     return description[start:stop].strip() # before + + after
-    
+
 setup(name = "uproot-methods",
       version = get_version(),
       packages = find_packages(exclude = ["tests"]),
@@ -58,6 +58,8 @@ setup(name = "uproot-methods",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",
+          "Programming Language :: Python :: 3.8",
+          "Programming Language :: Python :: 3.9",
           "Topic :: Scientific/Engineering",
           "Topic :: Scientific/Engineering :: Information Analysis",
           "Topic :: Scientific/Engineering :: Mathematics",
