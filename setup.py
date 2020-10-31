@@ -44,7 +44,7 @@ setup(name = "uproot-methods",
       install_requires = ["numpy>=1.13.1", "awkward>=0.11.0"],
       tests_require = [],
       classifiers = [
-          "Development Status :: 4 - Beta",
+          "Development Status :: 5 - Production/Stable",
           "Intended Audience :: Developers",
           "Intended Audience :: Information Technology",
           "Intended Audience :: Science/Research",
