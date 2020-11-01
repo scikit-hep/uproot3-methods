@@ -26,7 +26,7 @@ Reference documentation
 """
 
     return description[start:stop].strip() # before + + after
-    
+
 setup(name = "uproot-methods",
       version = get_version(),
       packages = find_packages(exclude = ["tests"]),
@@ -44,7 +44,7 @@ setup(name = "uproot-methods",
       install_requires = ["numpy>=1.13.1", "awkward>=0.11.0"],
       tests_require = [],
       classifiers = [
-          "Development Status :: 4 - Beta",
+          "Development Status :: 5 - Production/Stable",
           "Intended Audience :: Developers",
           "Intended Audience :: Information Technology",
           "Intended Audience :: Science/Research",
@@ -58,6 +58,8 @@ setup(name = "uproot-methods",
           "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",
+          "Programming Language :: Python :: 3.8",
+          "Programming Language :: Python :: 3.9",
           "Topic :: Scientific/Engineering",
           "Topic :: Scientific/Engineering :: Information Analysis",
           "Topic :: Scientific/Engineering :: Mathematics",
