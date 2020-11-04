@@ -222,6 +222,18 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         x, y, z = self._cross(other)
         return TVector3(x, y, z)
 
+    def angle(self, other):
+        denominator = math.sqrt(self.dot(self) * other.dot(other))
+        if denominator == 0:
+            # one of the vector is null
+            return 0.
+        cos_angle = self.dot(other) / denominator
+        if cos_angle > 1:
+            cos_angle = 1
+        elif cos_angle < -1:
+            cos_angle = -1
+        return math.acos(cos_angle)
+
     @property
     def theta(self):
         return math.atan2(self.rho, self.z)

@@ -83,6 +83,13 @@ class Test(unittest.TestCase):
         assert a == TVector3(104.4, 205.5, 0)
         a *= 10
         assert a == TVector3(1044, 2055, 0)
+        assert a.angle(a) == 0
+        assert a.angle(a * 3) == 0
+        self.assertAlmostEqual(a.angle(-2 * a), numpy.pi)
+        self.assertAlmostEqual(a.angle(a.rotatez(0.01)), 0.01)
+        self.assertAlmostEqual(a.angle(a.rotatez(-0.01)), 0.01)
+        assert a.angle(a * 0) == 0
+
 
     def test_vector3_array(self):
         a = TVector3Array(numpy.zeros(10), numpy.arange(10), numpy.zeros(10))
@@ -99,6 +106,11 @@ class Test(unittest.TestCase):
             self.assertAlmostEqual(aroti.x,-ai.x)
             self.assertAlmostEqual(aroti.y,-ai.y)
             self.assertAlmostEqual(aroti.z,ai.z)
+
+        numpy.testing.assert_almost_equal(a.angle(a), numpy.zeros_like(a))
+        numpy.testing.assert_almost_equal(a.angle(3 * a), numpy.zeros_like(a))
+        # first element is null vector, skip it, should return 0
+        numpy.testing.assert_almost_equal(a[1:].angle(-2 * a[1:]), numpy.ones_like(a[1:]) * numpy.pi)
 
     def test_vector3_jagged(self):
         TVector3Jagged = type("TVector3Jagged", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
