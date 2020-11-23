@@ -2,9 +2,9 @@
 
 # BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
 
-import awkward.type
-import awkward.array.chunked
-import awkward.array.objects
+import awkward0.type
+import awkward0.array.chunked
+import awkward0.array.objects
 
 import uproot_methods.classes.TLorentzVector
 
@@ -16,19 +16,19 @@ def jaggedtable(rowname, counts, fields):
     JaggedArray = counts.JaggedArray
     ChunkedArray = counts.ChunkedArray
     VirtualArray = counts.VirtualArray
-    VirtualTLorentzVectorArray = awkward.array.objects.Methods.mixin(uproot_methods.classes.TLorentzVector.PtEtaPhiMassArrayMethods, VirtualArray)
+    VirtualTLorentzVectorArray = awkward0.array.objects.Methods.mixin(uproot_methods.classes.TLorentzVector.PtEtaPhiMassArrayMethods, VirtualArray)
 
     countsarray = counts.array
-    if isinstance(countsarray, awkward.array.chunked.ChunkedArray):
+    if isinstance(countsarray, awkward0.array.chunked.ChunkedArray):
         return lazyjagged(countsarray, rowname, [(n, x.array) for n, x in fields])
     else:
         offsets = JaggedArray.counts2offsets(countsarray)
         table = Table.named(rowname)
         for n, x in fields:
-            table[n] = VirtualArray(getcontent, x, type=awkward.type.ArrayType(offsets[-1], x.type.to.to), cache=counts.cache, persistvirtual=counts.persistvirtual)
+            table[n] = VirtualArray(getcontent, x, type=awkward0.type.ArrayType(offsets[-1], x.type.to.to), cache=counts.cache, persistvirtual=counts.persistvirtual)
         columns = table.columns
         if "pt" in columns and "eta" in columns and "phi" in columns and "mass" in columns and "p4" not in columns:
-            table["p4"] = VirtualTLorentzVectorArray(uproot_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim, (table["pt"], table["eta"], table["phi"], table["mass"]), type=awkward.type.ArrayType(offsets[-1], uproot_methods.classes.TLorentzVector.PtEtaPhiMassLorentzVectorArray), cache=counts.cache, persistvirtual=counts.persistvirtual)
+            table["p4"] = VirtualTLorentzVectorArray(uproot_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim, (table["pt"], table["eta"], table["phi"], table["mass"]), type=awkward0.type.ArrayType(offsets[-1], uproot_methods.classes.TLorentzVector.PtEtaPhiMassLorentzVectorArray), cache=counts.cache, persistvirtual=counts.persistvirtual)
         return JaggedArray.fromoffsets(offsets, table)
 
 def lazyjagged(countsarray, rowname, fields):
@@ -38,7 +38,7 @@ def lazyjagged(countsarray, rowname, fields):
     chunks = []
     for i, countschunk in enumerate(countsarray.chunks):
         fieldschunks = []
-        tabletype = awkward.type.TableType()
+        tabletype = awkward0.type.TableType()
         for fieldname, field in fields:
             assert field.chunksizes[i] == countsarray.chunksizes[i]
             fieldschunks.append((fieldname, field.chunks[i]))
@@ -46,7 +46,7 @@ def lazyjagged(countsarray, rowname, fields):
         columns = tabletype.columns
         if "pt" in columns and "eta" in columns and "phi" in columns and "mass" in columns and "p4" not in columns:
             tabletype["p4"] = uproot_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim
-        chunks.append(VirtualArray(jaggedtable, (rowname, countschunk, fieldschunks), type=awkward.type.ArrayType(len(countschunk), float("inf"), tabletype), cache=countschunk.cache, persistvirtual=countschunk.persistvirtual))
+        chunks.append(VirtualArray(jaggedtable, (rowname, countschunk, fieldschunks), type=awkward0.type.ArrayType(len(countschunk), float("inf"), tabletype), cache=countschunk.cache, persistvirtual=countschunk.persistvirtual))
     return ChunkedArray(chunks, countsarray.chunksizes)
 
 def crossref(fromarray, links, subj):
@@ -54,10 +54,10 @@ def crossref(fromarray, links, subj):
     ChunkedArray = out.ChunkedArray
     VirtualArray = out.VirtualArray
 
-    if isinstance(out, awkward.array.chunked.ChunkedArray):
+    if isinstance(out, awkward0.array.chunked.ChunkedArray):
         chunks = []
         for j, chunk in enumerate(out.chunks):
-            newtype = awkward.type.ArrayType(out.chunksizes[j], float("inf"), awkward.type.TableType())
+            newtype = awkward0.type.ArrayType(out.chunksizes[j], float("inf"), awkward0.type.TableType())
             for n in chunk.type.to.to.columns:
                 newtype.to.to[n] = chunk.type.to.to[n]
             for collection, subname, i, localindex, name, totype in links:
@@ -69,7 +69,7 @@ def crossref(fromarray, links, subj):
     else:
         for collection, subname, i, localindex, name, totype in links:
             toarray = collection[subname].chunks[i]
-            out.content[name] = VirtualArray(indexedmask, (toarray, localindex, subj), type=awkward.type.ArrayType(out.offsets[-1], totype), cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
+            out.content[name] = VirtualArray(indexedmask, (toarray, localindex, subj), type=awkward0.type.ArrayType(out.offsets[-1], totype), cache=fromarray.cache, persistvirtual=fromarray.persistvirtual)
         return out
 
 def indexedmask(toarray, localindex, subj):
@@ -187,59 +187,59 @@ def transform(array):
 
     eventtype = events.type
 
-    eventtype.to["electrons"].to["photon"] = awkward.type.OptionType(eventtype.to["photons"].to)
+    eventtype.to["electrons"].to["photon"] = awkward0.type.OptionType(eventtype.to["photons"].to)
     eventtype.to["electrons"].to["photon"].check = False
-    eventtype.to["electrons"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
+    eventtype.to["electrons"].to["jet"] = awkward0.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["electrons"].to["jet"].check = False
     for i, chunk in enumerate(events["electrons"].chunks):
         assert events["electrons"].chunksizes[i] == events["jets"].chunksizes[i] == events["photons"].chunksizes[i]
         events["electrons"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "photons", i, array["Electron_photonIdx"].chunks[i], "photon", eventtype.to["electrons"].to["photon"]),
             (events, "jets", i, array["Electron_jetIdx"].chunks[i], "jet", eventtype.to["electrons"].to["jet"]),
-            ], None), type=awkward.type.ArrayType(events["electrons"].chunksizes[i], eventtype.to["electrons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward0.type.ArrayType(events["electrons"].chunksizes[i], eventtype.to["electrons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
-    eventtype.to["muons"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
+    eventtype.to["muons"].to["jet"] = awkward0.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["muons"].to["jet"].check = False
     for i, chunk in enumerate(events["muons"].chunks):
         assert events["muons"].chunksizes[i] == events["jets"].chunksizes[i]
         events["muons"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "jets", i, array["Muon_jetIdx"].chunks[i], "jet", eventtype.to["muons"].to["jet"]),
-            ], None), type=awkward.type.ArrayType(events["muons"].chunksizes[i], eventtype.to["muons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward0.type.ArrayType(events["muons"].chunksizes[i], eventtype.to["muons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
-    eventtype.to["taus"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
+    eventtype.to["taus"].to["jet"] = awkward0.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["taus"].to["jet"].check = False
     for i, chunk in enumerate(events["taus"].chunks):
         assert events["taus"].chunksizes[i] == events["jets"].chunksizes[i]
         events["taus"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "jets", i, array["Tau_jetIdx"].chunks[i], "jet", eventtype.to["taus"].to["jet"]),
-            ], None), type=awkward.type.ArrayType(events["jets"].chunksizes[i], eventtype.to["taus"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward0.type.ArrayType(events["jets"].chunksizes[i], eventtype.to["taus"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
-    eventtype.to["taus"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
+    eventtype.to["taus"].to["jet"] = awkward0.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["taus"].to["jet"].check = False
     for i, chunk in enumerate(events["taus"].chunks):
         assert events["taus"].chunksizes[i] == events["jets"].chunksizes[i]
         events["taus"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "jets", i, array["Tau_jetIdx"].chunks[i], "jet", eventtype.to["taus"].to["jet"]),
-            ], None), type=awkward.type.ArrayType(events["taus"].chunksizes[i], eventtype.to["taus"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward0.type.ArrayType(events["taus"].chunksizes[i], eventtype.to["taus"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
-    eventtype.to["photons"].to["electron"] = awkward.type.OptionType(eventtype.to["electrons"].to)
+    eventtype.to["photons"].to["electron"] = awkward0.type.OptionType(eventtype.to["electrons"].to)
     eventtype.to["photons"].to["electron"].check = False
-    eventtype.to["photons"].to["jet"] = awkward.type.OptionType(eventtype.to["jets"].to)
+    eventtype.to["photons"].to["jet"] = awkward0.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["photons"].to["jet"].check = False
     for i, chunk in enumerate(events["photons"].chunks):
         assert events["photons"].chunksizes[i] == events["jets"].chunksizes[i] == events["electrons"].chunksizes[i]
         events["photons"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "electrons", i, array["Photon_electronIdx"].chunks[i], "electron", eventtype.to["photons"].to["electron"]),
             (events, "jets", i, array["Photon_jetIdx"].chunks[i], "jet", eventtype.to["photons"].to["jet"]),
-            ], None), type=awkward.type.ArrayType(events["photons"].chunksizes[i], eventtype.to["photons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward0.type.ArrayType(events["photons"].chunksizes[i], eventtype.to["photons"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
-    eventtype.to["jets"].to["electron1"] = awkward.type.OptionType(eventtype.to["electrons"].to)
+    eventtype.to["jets"].to["electron1"] = awkward0.type.OptionType(eventtype.to["electrons"].to)
     eventtype.to["jets"].to["electron1"].check = False
-    eventtype.to["jets"].to["electron2"] = awkward.type.OptionType(eventtype.to["electrons"].to)
+    eventtype.to["jets"].to["electron2"] = awkward0.type.OptionType(eventtype.to["electrons"].to)
     eventtype.to["jets"].to["electron2"].check = False
-    eventtype.to["jets"].to["muon1"] = awkward.type.OptionType(eventtype.to["muons"].to)
+    eventtype.to["jets"].to["muon1"] = awkward0.type.OptionType(eventtype.to["muons"].to)
     eventtype.to["jets"].to["muon1"].check = False
-    eventtype.to["jets"].to["muon2"] = awkward.type.OptionType(eventtype.to["muons"].to)
+    eventtype.to["jets"].to["muon2"] = awkward0.type.OptionType(eventtype.to["muons"].to)
     eventtype.to["jets"].to["muon2"].check = False
     for i, chunk in enumerate(events["jets"].chunks):
         assert events["jets"].chunksizes[i] == events["electrons"].chunksizes[i] == events["muons"].chunksizes[i]
@@ -248,18 +248,18 @@ def transform(array):
             (events, "electrons", i, array["Jet_electronIdx2"].chunks[i], "electron2", eventtype.to["jets"].to["electron2"]),
             (events, "muons", i, array["Jet_muonIdx1"].chunks[i], "muon1", eventtype.to["jets"].to["muon1"]),
             (events, "muons", i, array["Jet_muonIdx2"].chunks[i], "muon2", eventtype.to["jets"].to["muon2"]),
-            ], None), type=awkward.type.ArrayType(events["jets"].chunksizes[i], eventtype.to["jets"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward0.type.ArrayType(events["jets"].chunksizes[i], eventtype.to["jets"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
-    eventtype.to["fatjets"].to["subjet1"] = awkward.type.OptionType(eventtype.to["jets"].to)
+    eventtype.to["fatjets"].to["subjet1"] = awkward0.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["fatjets"].to["subjet1"].check = False
-    eventtype.to["fatjets"].to["subjet2"] = awkward.type.OptionType(eventtype.to["jets"].to)
+    eventtype.to["fatjets"].to["subjet2"] = awkward0.type.OptionType(eventtype.to["jets"].to)
     eventtype.to["fatjets"].to["subjet2"].check = False
     for i, chunk in enumerate(events["fatjets"].chunks):
         assert events["fatjets"].chunksizes[i] == events["jets"].chunksizes[i]
         events["fatjets"].chunks[i] = VirtualArray(crossref, (chunk, [
             (events, "jets", i, array["FatJet_subJetIdx1"].chunks[i], "subjet1", eventtype.to["fatjets"].to["subjet1"]),
             (events, "jets", i, array["FatJet_subJetIdx2"].chunks[i], "subjet2", eventtype.to["fatjets"].to["subjet2"]),
-            ], None), type=awkward.type.ArrayType(events["fatjets"].chunksizes[i], eventtype.to["fatjets"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
+            ], None), type=awkward0.type.ArrayType(events["fatjets"].chunksizes[i], eventtype.to["fatjets"]), cache=chunk.cache, persistvirtual=chunk.persistvirtual)
 
     if len(others) > 0:
         etc = events["etc"] = Table.named("OtherFields")

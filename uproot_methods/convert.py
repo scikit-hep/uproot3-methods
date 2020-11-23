@@ -4,7 +4,7 @@
 
 import importlib
 
-# uses numpy, not awkward.numpy, because it operates on TFile data, not TTree data
+# uses numpy, not awkward0.numpy, because it operates on TFile data, not TTree data
 import numpy
 
 def towriteable(obj):

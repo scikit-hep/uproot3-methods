@@ -6,7 +6,7 @@ import unittest
 
 import numpy
 
-import awkward
+import awkward0
 import uproot_methods
 from uproot_methods import *
 
@@ -47,7 +47,7 @@ class Test(unittest.TestCase):
         assert (a**3).tolist() == [0.0, 1.0, 8.0, 27.0, 64.0, 125.0, 216.0, 343.0, 512.0, 729.0]
 
     def test_vector2_jagged(self):
-        TVector2Jagged = type("TVector2Jagged", (awkward.JaggedArray, uproot_methods.classes.TVector2.ArrayMethods), {})
+        TVector2Jagged = type("TVector2Jagged", (awkward0.JaggedArray, uproot_methods.classes.TVector2.ArrayMethods), {})
         a = TVector2Jagged.fromoffsets([0, 3, 3, 5, 10], TVector2Array(numpy.zeros(10), numpy.arange(10)))
         a._generator = uproot_methods.classes.TVector2.TVector2
         a._args = ()
@@ -113,7 +113,7 @@ class Test(unittest.TestCase):
         numpy.testing.assert_almost_equal(a[1:].angle(-2 * a[1:]), numpy.ones_like(a[1:]) * numpy.pi)
 
     def test_vector3_jagged(self):
-        TVector3Jagged = type("TVector3Jagged", (awkward.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+        TVector3Jagged = type("TVector3Jagged", (awkward0.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
         a = TVector3Jagged.fromoffsets([0, 3, 3, 5, 10], TVector3Array(numpy.zeros(10), numpy.arange(10), numpy.zeros(10)))
         a._generator = uproot_methods.classes.TVector3.TVector3
         a._args = ()
@@ -189,7 +189,7 @@ class Test(unittest.TestCase):
         assert a.sum().mass == numpy.hypot(20 * numpy.cosh(a.eta), a.mass).sum()
 
     def test_lorentzvector_jagged(self):
-        TLorentzVectorJagged = type("TLorentzVectorJagged", (awkward.JaggedArray, uproot_methods.classes.TLorentzVector.ArrayMethods), {})
+        TLorentzVectorJagged = type("TLorentzVectorJagged", (awkward0.JaggedArray, uproot_methods.classes.TLorentzVector.ArrayMethods), {})
         a = TLorentzVectorJagged.fromoffsets([0, 3, 3, 5, 10], TLorentzVectorArray(numpy.zeros(10), numpy.arange(10), numpy.zeros(10), numpy.zeros(10)))
         a._generator = uproot_methods.classes.TLorentzVector.TLorentzVector
         a._args = ()
