@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import math
 import numbers
@@ -8,8 +8,8 @@ import numbers
 import awkward0.array.jagged
 import awkward0.util
 
-import uproot_methods.common.TVector
-import uproot_methods.base
+import uproot3_methods.common.TVector
+import uproot3_methods.base
 
 class Common(object):
     def dot(self, other):
@@ -24,7 +24,7 @@ class Common(object):
         y = self.x*s + self.y*c
         return x, y
 
-class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
+class ArrayMethods(Common, uproot3_methods.common.TVector.ArrayMethods, uproot3_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward0.ObjectArray.__init__(self, table, lambda row: TVector2(row["fX"], row["fY"]))
 
@@ -32,7 +32,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
         self._valid()
         x, y = self.x, self.y
         return serializer.encode_call(
-            ["uproot_methods.classes.TVector2", "TVector2Array", "from_cartesian"],
+            ["uproot3_methods.classes.TVector2", "TVector2Array", "from_cartesian"],
             serializer(x, "TVector3Array.x"),
             serializer(y, "TVector3Array.y"))
 
@@ -93,7 +93,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
 
 JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward0.JaggedArray)
 
-class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
+class Methods(Common, uproot3_methods.common.TVector.Methods, uproot3_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
     @property
@@ -136,7 +136,7 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
         x, y = self._rotate(angle)
         return TVector2(x, y)
 
-class TVector2Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward0.ObjectArray):
+class TVector2Array(ArrayMethods, uproot3_methods.base.ROOTMethods.awkward0.ObjectArray):
 
     def __init__(self, x, y):
         if isinstance(x, awkward0.array.jagged.JaggedArray) or isinstance(y, awkward0.array.jagged.JaggedArray):

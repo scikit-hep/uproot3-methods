@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import numbers
 import math
@@ -8,9 +8,9 @@ import sys
 
 import numpy
 
-import uproot_methods.base
+import uproot3_methods.base
 
-class Methods(uproot_methods.base.ROOTMethods):
+class Methods(uproot3_methods.base.ROOTMethods):
     def __repr__(self):
         if self.name is None:
             return "<{0} at 0x{1:012x}>".format(self._classname, id(self))

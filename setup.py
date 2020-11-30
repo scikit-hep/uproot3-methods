@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import os.path
 
@@ -9,7 +9,7 @@ from setuptools import setup
 
 def get_version():
     g = {}
-    exec(open(os.path.join("uproot_methods", "version.py")).read(), g)
+    exec(open(os.path.join("uproot3_methods", "version.py")).read(), g)
     return g["__version__"]
 
 def get_description():
@@ -27,7 +27,7 @@ Reference documentation
 
     return description[start:stop].strip() # before + + after
 
-setup(name = "uproot-methods",
+setup(name = "uproot3-methods",
       version = get_version(),
       packages = find_packages(exclude = ["tests"]),
       scripts = [],
@@ -37,8 +37,8 @@ setup(name = "uproot-methods",
       author_email = "pivarski@princeton.edu",
       maintainer = "Jim Pivarski (IRIS-HEP)",
       maintainer_email = "pivarski@princeton.edu",
-      url = "https://github.com/scikit-hep/uproot-methods",
-      download_url = "https://github.com/scikit-hep/uproot-methods/releases",
+      url = "https://github.com/scikit-hep/uproot3-methods",
+      download_url = "https://github.com/scikit-hep/uproot3-methods/releases",
       license = "BSD 3-clause",
       test_suite = "tests",
       install_requires = ["numpy>=1.13.1", "awkward0"],

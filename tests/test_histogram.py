@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import unittest
 import numpy as np
@@ -10,7 +10,7 @@ class Test(unittest.TestCase):
         pass
 
     def test_th1(self):
-        from uproot_methods.classes.TH1 import Methods, _histtype, from_numpy
+        from uproot3_methods.classes.TH1 import Methods, _histtype, from_numpy
 
         edges = np.array((0., 1., 2.))
         values = np.array([2, 3])

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import numpy
 
-import uproot_methods.base
+import uproot3_methods.base
 
 
-class Methods(uproot_methods.base.ROOTMethods):
+class Methods(uproot3_methods.base.ROOTMethods):
     @property
     def numbins(self):
         return self.xnumbins * self.ynumbins
