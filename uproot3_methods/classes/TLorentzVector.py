@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import math
 import numbers
@@ -11,9 +11,9 @@ import awkward0.array.jagged
 import awkward0.array.objects
 import awkward0.util
 
-import uproot_methods.base
-import uproot_methods.common.TVector
-import uproot_methods.classes.TVector3
+import uproot3_methods.base
+import uproot3_methods.common.TVector
+import uproot3_methods.classes.TVector3
 
 class Common(object):
     @property
@@ -86,7 +86,7 @@ class Common(object):
         return (self.eta - other.eta)**2 + self.delta_phi(other)**2
 
     def _rotate_axis(self, axis, angle):
-        if not isinstance(axis, uproot_methods.classes.TVector3.Common):
+        if not isinstance(axis, uproot3_methods.classes.TVector3.Common):
             raise TypeError("axis must be an (array of) TVector3")
         p3 = self.p3._rotate_axis(axis, angle)
         return p3, self.t
@@ -95,13 +95,13 @@ class Common(object):
         return self.p3._rotate_euler(phi, theta, psi), self.t
 
     def rotatex(self, angle):
-        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(1.0, 0.0, 0.0), angle)
+        return self.rotate_axis(uproot3_methods.classes.TVector3.TVector3(1.0, 0.0, 0.0), angle)
 
     def rotatey(self, angle):
-        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(0.0, 1.0, 0.0), angle)
+        return self.rotate_axis(uproot3_methods.classes.TVector3.TVector3(0.0, 1.0, 0.0), angle)
 
     def rotatez(self, angle):
-        return self.rotate_axis(uproot_methods.classes.TVector3.TVector3(0.0, 0.0, 1.0), angle)
+        return self.rotate_axis(uproot3_methods.classes.TVector3.TVector3(0.0, 0.0, 1.0), angle)
 
     def isspacelike(self, tolerance=1e-10):
         return self.mag2 < -tolerance
@@ -121,7 +121,7 @@ class Common(object):
     def __ge__(self, other):
         raise TypeError("Lorentz vectors have no natural ordering")
 
-class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
+class ArrayMethods(Common, uproot3_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward0.ObjectArray.__init__(self, table, lambda row: TLorentzVector(row["fX"], row["fY"], row["fZ"], row["fE"]))
 
@@ -129,7 +129,7 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
         self._valid()
         x, y, z, t = self.x, self.y, self.z, self.t
         return serializer.encode_call(
-            ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_cartesian"],
+            ["uproot3_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_cartesian"],
             serializer(x, "TLorentzVectorArray.x"),
             serializer(y, "TLorentzVectorArray.y"),
             serializer(z, "TLorentzVectorArray.z"),
@@ -138,18 +138,18 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
     @staticmethod
     def _wrapmethods(node, awkwardlib):
         if isinstance(node, awkward0.array.chunked.ChunkedArray):
-            node.__class__ = type("ChunkedArrayMethods", (awkwardlib.ChunkedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            node.__class__ = type("ChunkedArrayMethods", (awkwardlib.ChunkedArray, uproot3_methods.classes.TVector3.ArrayMethods), {})
             for chunk in node.chunks:
                 ArrayMethods._wrapmethods(chunk, awkwardlib)
         elif isinstance(node, awkward0.array.jagged.JaggedArray):
-            node.__class__ = type("JaggedArrayMethods", (awkwardlib.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            node.__class__ = type("JaggedArrayMethods", (awkwardlib.JaggedArray, uproot3_methods.classes.TVector3.ArrayMethods), {})
             ArrayMethods._wrapmethods(node.content, awkwardlib)
         elif isinstance(node, awkward0.array.objects.ObjectArray):
-            node.__class__ = type("ObjectArrayMethods", (awkwardlib.ObjectArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            node.__class__ = type("ObjectArrayMethods", (awkwardlib.ObjectArray, uproot3_methods.classes.TVector3.ArrayMethods), {})
 
     @property
     def p3(self):
-        out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
+        out = self.empty_like(generator=lambda row: uproot3_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
         ArrayMethods._wrapmethods(out, self.awkward0)
         out["fX"] = self.x
         out["fY"] = self.y
@@ -208,18 +208,18 @@ class ArrayMethods(Common, uproot_methods.base.ROOTMethods):
 
     @property
     def boostp3(self):
-        out = self.empty_like(generator=lambda row: uproot_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
+        out = self.empty_like(generator=lambda row: uproot3_methods.classes.TVector3.TVector3(row["fX"], row["fY"], row["fZ"]))
         if isinstance(self, self.awkward0.JaggedArray):
-            out.__class__ = type("JaggedArrayMethods", (self.awkward0.JaggedArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            out.__class__ = type("JaggedArrayMethods", (self.awkward0.JaggedArray, uproot3_methods.classes.TVector3.ArrayMethods), {})
         else:
-            out.__class__ = type("ObjectArrayMethods", (self.awkward0.ObjectArray, uproot_methods.classes.TVector3.ArrayMethods), {})
+            out.__class__ = type("ObjectArrayMethods", (self.awkward0.ObjectArray, uproot3_methods.classes.TVector3.ArrayMethods), {})
         out["fX"] = self.x / self.t
         out["fY"] = self.y / self.t
         out["fZ"] = self.z / self.t
         return out
 
     def boost(self, p3):
-        if not isinstance(p3, (uproot_methods.classes.TVector3.ArrayMethods, uproot_methods.classes.TVector3.Methods)):
+        if not isinstance(p3, (uproot3_methods.classes.TVector3.ArrayMethods, uproot3_methods.classes.TVector3.Methods)):
             raise TypeError("boost p3 must be an (array of) TVector3")
 
         b2 = p3.mag2
@@ -329,7 +329,7 @@ class PtEtaPhiMassArrayMethods(ArrayMethods):
         self._valid()
         pt, eta, phi, mass = self.pt, self.eta, self.phi, self.mass
         return serializer.encode_call(
-            ["uproot_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_ptetaphim"],
+            ["uproot3_methods.classes.TLorentzVector", "TLorentzVectorArray", "from_ptetaphim"],
             serializer(pt, "TLorentzVectorArray.pt"),
             serializer(eta, "TLorentzVectorArray.eta"),
             serializer(phi, "TLorentzVectorArray.phi"),
@@ -442,7 +442,7 @@ class PtEtaPhiMassArrayMethods(ArrayMethods):
 
 PtEtaPhiMassJaggedArrayMethods = PtEtaPhiMassArrayMethods.mixin(PtEtaPhiMassArrayMethods, awkward0.JaggedArray)
 
-class Methods(Common, uproot_methods.base.ROOTMethods):
+class Methods(Common, uproot3_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
     @property
@@ -537,10 +537,10 @@ class Methods(Common, uproot_methods.base.ROOTMethods):
 
     @property
     def boostp3(self):
-        return uproot_methods.classes.TVector3.TVector3(self.x/self.t, self.y/self.t, self.z/self.t)
+        return uproot3_methods.classes.TVector3.TVector3(self.x/self.t, self.y/self.t, self.z/self.t)
 
     def boost(self, p3):
-        if not isinstance(p3, uproot_methods.classes.TVector3.Methods):
+        if not isinstance(p3, uproot3_methods.classes.TVector3.Methods):
             raise TypeError("boost p3 must be a TVector3")
 
         b2 = p3.mag2
@@ -720,7 +720,7 @@ class PtEtaPhiMassMethods(Methods):
 
     @property
     def p3(self):
-        return uproot_methods.classes.TVector3.TVector3(self.x, self.y, self.z)
+        return uproot3_methods.classes.TVector3.TVector3(self.x, self.y, self.z)
 
     @property
     def x(self):
@@ -745,7 +745,7 @@ class PtEtaPhiMassMethods(Methods):
     def __repr__(self):
         return "PtEtaPhiMassLorentzVector(pt={0:.5g}, eta={1:.5g}, phi={2:.5g}, mass={3:.5g})".format(self._fPt, self._fEta, self._fPhi, self._fMass)
 
-class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.base.ROOTMethods.awkward0.ObjectArray):
+class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot3_methods.base.ROOTMethods.awkward0.ObjectArray):
     def __init__(self, pt, eta, phi, mass):
         if isinstance(pt, awkward0.array.jagged.JaggedArray) or isinstance(eta, awkward0.array.jagged.JaggedArray) or isinstance(phi, awkward0.array.jagged.JaggedArray) or isinstance(mass, awkward0.array.jagged.JaggedArray):
             raise TypeError("PtEtaPhiMassLorentzVectorArray constructor arguments must not be jagged; use TLorentzVectorArray.from_ptetaphim for jaggedness-handling")
@@ -787,7 +787,7 @@ class PtEtaPhiMassLorentzVectorArray(PtEtaPhiMassArrayMethods, uproot_methods.ba
     def mass(self, value):
         self["fMass"] = value
 
-class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward0.ObjectArray):
+class TLorentzVectorArray(ArrayMethods, uproot3_methods.base.ROOTMethods.awkward0.ObjectArray):
 
     def __init__(self, x, y, z, t):
         if isinstance(x, awkward0.array.jagged.JaggedArray) or isinstance(y, awkward0.array.jagged.JaggedArray) or isinstance(z, awkward0.array.jagged.JaggedArray) or isinstance(t, awkward0.array.jagged.JaggedArray):
@@ -823,12 +823,12 @@ class TLorentzVectorArray(ArrayMethods, uproot_methods.base.ROOTMethods.awkward0
     @classmethod
     @awkward0.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_spherical(cls, r, theta, phi, t):
-        return cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t)
+        return cls.from_p3(uproot3_methods.classes.TVector3.TVector3Array.from_spherical(r, theta, phi), t)
 
     @classmethod
     @awkward0.util.wrapjaggedmethod(JaggedArrayMethods)
     def from_cylindrical(cls, rho, phi, z, t):
-        return cls.from_p3(uproot_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t)
+        return cls.from_p3(uproot3_methods.classes.TVector3.TVector3Array.from_cylindrical(rho, phi, z), t)
 
     @classmethod
     @awkward0.util.wrapjaggedmethod(JaggedArrayMethods)
@@ -937,7 +937,7 @@ class PtEtaPhiMassLorentzVector(PtEtaPhiMassMethods):
 
 class TLorentzVector(Methods):
     def __init__(self, x, y, z, t):
-        self._fP = uproot_methods.classes.TVector3.TVector3(float(x), float(y), float(z))
+        self._fP = uproot3_methods.classes.TVector3.TVector3(float(x), float(y), float(z))
         self._fE = float(t)
 
     @classmethod
@@ -953,11 +953,11 @@ class TLorentzVector(Methods):
 
     @classmethod
     def from_spherical(cls, r, theta, phi, t):
-        return cls.from_p3(uproot_methods.classes.TVector3.Methods.from_spherical(r, theta, phi), t)
+        return cls.from_p3(uproot3_methods.classes.TVector3.Methods.from_spherical(r, theta, phi), t)
 
     @classmethod
     def from_cylindrical(cls, rho, phi, z, t):
-        return cls.from_p3(uproot_methods.classes.TVector3.Methods.from_cylindrical(rho, phi, z), t)
+        return cls.from_p3(uproot3_methods.classes.TVector3.Methods.from_cylindrical(rho, phi, z), t)
 
     @classmethod
     def from_xyzm(cls, x, y, z, m):

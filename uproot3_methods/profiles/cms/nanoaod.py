@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import awkward0.type
 import awkward0.array.chunked
 import awkward0.array.objects
 
-import uproot_methods.classes.TLorentzVector
+import uproot3_methods.classes.TLorentzVector
 
 def getcontent(virtual):
     return virtual.array.content
@@ -16,7 +16,7 @@ def jaggedtable(rowname, counts, fields):
     JaggedArray = counts.JaggedArray
     ChunkedArray = counts.ChunkedArray
     VirtualArray = counts.VirtualArray
-    VirtualTLorentzVectorArray = awkward0.array.objects.Methods.mixin(uproot_methods.classes.TLorentzVector.PtEtaPhiMassArrayMethods, VirtualArray)
+    VirtualTLorentzVectorArray = awkward0.array.objects.Methods.mixin(uproot3_methods.classes.TLorentzVector.PtEtaPhiMassArrayMethods, VirtualArray)
 
     countsarray = counts.array
     if isinstance(countsarray, awkward0.array.chunked.ChunkedArray):
@@ -28,7 +28,7 @@ def jaggedtable(rowname, counts, fields):
             table[n] = VirtualArray(getcontent, x, type=awkward0.type.ArrayType(offsets[-1], x.type.to.to), cache=counts.cache, persistvirtual=counts.persistvirtual)
         columns = table.columns
         if "pt" in columns and "eta" in columns and "phi" in columns and "mass" in columns and "p4" not in columns:
-            table["p4"] = VirtualTLorentzVectorArray(uproot_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim, (table["pt"], table["eta"], table["phi"], table["mass"]), type=awkward0.type.ArrayType(offsets[-1], uproot_methods.classes.TLorentzVector.PtEtaPhiMassLorentzVectorArray), cache=counts.cache, persistvirtual=counts.persistvirtual)
+            table["p4"] = VirtualTLorentzVectorArray(uproot3_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim, (table["pt"], table["eta"], table["phi"], table["mass"]), type=awkward0.type.ArrayType(offsets[-1], uproot3_methods.classes.TLorentzVector.PtEtaPhiMassLorentzVectorArray), cache=counts.cache, persistvirtual=counts.persistvirtual)
         return JaggedArray.fromoffsets(offsets, table)
 
 def lazyjagged(countsarray, rowname, fields):
@@ -45,7 +45,7 @@ def lazyjagged(countsarray, rowname, fields):
             tabletype[fieldname] = field.type.to.to
         columns = tabletype.columns
         if "pt" in columns and "eta" in columns and "phi" in columns and "mass" in columns and "p4" not in columns:
-            tabletype["p4"] = uproot_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim
+            tabletype["p4"] = uproot3_methods.classes.TLorentzVector.TLorentzVectorArray.from_ptetaphim
         chunks.append(VirtualArray(jaggedtable, (rowname, countschunk, fieldschunks), type=awkward0.type.ArrayType(len(countschunk), float("inf"), tabletype), cache=countschunk.cache, persistvirtual=countschunk.persistvirtual))
     return ChunkedArray(chunks, countsarray.chunksizes)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import math
 import numbers
@@ -8,8 +8,8 @@ import numbers
 import awkward0.array.jagged
 import awkward0.util
 
-import uproot_methods.base
-import uproot_methods.common.TVector
+import uproot3_methods.base
+import uproot3_methods.common.TVector
 
 class Common(object):
     def dot(self, other):
@@ -79,7 +79,7 @@ class Common(object):
     def rotatez(self, angle):
         return self.rotate_axis(TVector3(0.0, 0.0, 1.0), angle)
 
-class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_methods.base.ROOTMethods):
+class ArrayMethods(Common, uproot3_methods.common.TVector.ArrayMethods, uproot3_methods.base.ROOTMethods):
     def _initObjectArray(self, table):
         self.awkward0.ObjectArray.__init__(self, table, lambda row: TVector3(row["fX"], row["fY"], row["fZ"]))
 
@@ -87,7 +87,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
         self._valid()
         x, y, z = self.x, self.y, self.z
         return serializer.encode_call(
-            ["uproot_methods.classes.TVector3", "TVector3Array", "from_cartesian"],
+            ["uproot3_methods.classes.TVector3", "TVector3Array", "from_cartesian"],
             serializer(x, "TVector3Array.x"),
             serializer(y, "TVector3Array.y"),
             serializer(z, "TVector3Array.z"))
@@ -175,7 +175,7 @@ class ArrayMethods(Common, uproot_methods.common.TVector.ArrayMethods, uproot_me
 
 JaggedArrayMethods = ArrayMethods.mixin(ArrayMethods, awkward0.JaggedArray)
 
-class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base.ROOTMethods):
+class Methods(Common, uproot3_methods.common.TVector.Methods, uproot3_methods.base.ROOTMethods):
     _arraymethods = ArrayMethods
 
     @property
@@ -245,7 +245,7 @@ class Methods(Common, uproot_methods.common.TVector.Methods, uproot_methods.base
     def rotate_euler(self, phi=0, theta=0, psi=0):
         return TVector3(x, y, z)
 
-class TVector3Array(ArrayMethods, uproot_methods.base.ROOTMethods.awkward0.ObjectArray):
+class TVector3Array(ArrayMethods, uproot3_methods.base.ROOTMethods.awkward0.ObjectArray):
 
     def __init__(self, x, y, z):
         if isinstance(x, awkward0.array.jagged.JaggedArray) or isinstance(y, awkward0.array.jagged.JaggedArray) or isinstance(z, awkward0.array.jagged.JaggedArray):

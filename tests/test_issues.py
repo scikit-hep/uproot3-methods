@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
-# BSD 3-Clause License; see https://github.com/scikit-hep/uproot-methods/blob/master/LICENSE
+# BSD 3-Clause License; see https://github.com/scikit-hep/uproot3-methods/blob/master/LICENSE
 
 import unittest
 
 import numpy
 
 import awkward0
-import uproot_methods
-from uproot_methods import *
+import uproot3_methods
+from uproot3_methods import *
 
 import inspect
 
@@ -51,7 +51,7 @@ class Test(unittest.TestCase):
         eta = eta[mask]
         phi = phi[mask]
 
-        electrons = uproot_methods.TLorentzVectorArray.from_ptetaphim(pt, eta, phi, 0.000511)
+        electrons = uproot3_methods.TLorentzVectorArray.from_ptetaphim(pt, eta, phi, 0.000511)
 
     def test_issue61(self):
         assert TVector2(2, 0).rotate(numpy.pi/6).rotate(-numpy.pi/6) == TVector2(2, 0)

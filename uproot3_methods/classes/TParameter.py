@@ -1,4 +1,4 @@
-import uproot_methods.base
+import uproot3_methods.base
 
 
 def _decode(seq):
@@ -8,7 +8,7 @@ def _decode(seq):
         return seq
 
 
-class Methods(uproot_methods.base.ROOTMethods):
+class Methods(uproot3_methods.base.ROOTMethods):
     def __repr__(self):
         if self._fName is None:
             return "<{0} at 0x{1:012x}>".format(_decode(self._classname), id(self))
