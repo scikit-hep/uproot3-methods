@@ -27,11 +27,12 @@ class Test(unittest.TestCase):
 
         np.testing.assert_equal(h.edges, edges)
         np.testing.assert_equal(h.values, values)
-        np.testing.assert_equal(h.variances, values ** 2)
+        # Sumw2: variances equal the values
+        np.testing.assert_equal(h.variances, values)
 
         np.testing.assert_equal(h.alledges, [-np.inf] + list(edges) + [np.inf])
         np.testing.assert_equal(h.allvalues, [0] + list(values) + [0])
-        np.testing.assert_equal(h.allvariances, [0] + list(values ** 2) + [0])
+        np.testing.assert_equal(h.allvariances, [0] + list(values) + [0])
 
         np.testing.assert_equal(h.bins, ((0, 1), (1, 2)))
         np.testing.assert_equal(h.allbins, ((-np.inf, 0), (0, 1), (1, 2), (2, np.inf)))
